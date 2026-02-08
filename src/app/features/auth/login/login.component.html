@@ -1,0 +1,23 @@
+<div
+    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 px-4 py-12">
+    <div class="w-full max-w-md">
+        <!-- Logo and Header -->
+        <app-logo size="md" />
+
+        <!-- Login Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-6">Iniciar Sesión</h2>
+
+            <!-- Login Form Organism -->
+            <app-login-form (submitForm)="onLoginSubmit($event)" />
+        </div>
+
+        <!-- Additional Info -->
+        <p class="mt-8 text-center text-sm text-gray-600">
+            ¿Necesitas ayuda?
+            <a href="#" class="text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                Contacta soporte
+            </a>
+        </p>
+    </div>
+</div>
