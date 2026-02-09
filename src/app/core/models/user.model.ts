@@ -20,7 +20,7 @@ export interface User {
     id: string;
     email: string;
     role: UserRole;
-    details: UserDetails | null; // Sincronizado con el backend (plural)
+    detalles: UserDetails | null; // Sincronizado con el backend (detalles en español)
     specialties: Specialty[];    // Nodo de especialidades asignadas
     deletedAt: string | null;
 }

@@ -23,10 +23,10 @@ export class AuthService {
     readonly currentUser = this.currentUserSignal.asReadonly();
     readonly isAuthenticated = this.isAuthenticatedSignal.asReadonly();
     readonly userRole = computed(() => this.currentUserSignal()?.role ?? null);
-    readonly userDetails = computed(() => this.currentUserSignal()?.details ?? null);
+    readonly userDetails = computed(() => this.currentUserSignal()?.detalles ?? null);
     readonly userName = computed(() => {
-        const details = this.currentUserSignal()?.details;
-        return details ? `${details.nombre} ${details.apellido}` : null;
+        const detalles = this.currentUserSignal()?.detalles;
+        return detalles ? `${detalles.nombre} ${detalles.apellido}` : null;
     });
 
     // API endpoint from environment

@@ -7,7 +7,6 @@ import { LogoComponent } from '../../molecules/logo/logo.component';
 
 @Component({
     selector: 'app-sidebar',
-    standalone: true,
     imports: [CommonModule, LogoComponent],
     templateUrl: './sidebar.component.html',
     styleUrl: './sidebar.component.css',

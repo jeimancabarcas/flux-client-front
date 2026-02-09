@@ -30,9 +30,16 @@ export class LoginComponent {
         formComponent.setError(null);
 
         this.authService.login(credentials).subscribe({
-            next: () => {
+            next: (res) => {
                 formComponent.setLoading(false);
-                this.router.navigate(['/dashboard']);
+                const user = res.data.user;
+
+                // Redirección inteligente: Si ya tiene detalles o es admin, directo al dashboard
+                if (user.role === 'ADMIN' || user.detalles) {
+                    this.router.navigate(['/dashboard']);
+                } else {
+                    this.router.navigate(['/onboarding']);
+                }
             },
             error: (error) => {
                 formComponent.setLoading(false);

@@ -7,7 +7,6 @@ import { SidebarComponent } from '../../shared/components/organisms/sidebar/side
 
 @Component({
     selector: 'app-dashboard',
-    standalone: true,
     imports: [LogoComponent, SidebarComponent],
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.css',

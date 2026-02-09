@@ -10,7 +10,6 @@ import { UserFormComponent } from '../../../shared/components/organisms/user-for
 
 @Component({
     selector: 'app-user-management',
-    standalone: true,
     imports: [CommonModule, SidebarComponent, ModalComponent, UserFormComponent],
     templateUrl: './user-management.component.html',
     styleUrl: './user-management.component.css',

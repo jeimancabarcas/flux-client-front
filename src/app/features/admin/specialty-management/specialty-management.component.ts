@@ -10,7 +10,6 @@ import { SpecialtyFormComponent } from '../../../shared/components/organisms/spe
 
 @Component({
     selector: 'app-specialty-management',
-    standalone: true,
     imports: [CommonModule, SidebarComponent, ModalComponent, SpecialtyFormComponent],
     templateUrl: './specialty-management.component.html',
     styleUrl: './specialty-management.component.css',

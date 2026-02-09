@@ -45,4 +45,11 @@ export class UserService {
     deleteUser(id: string): Observable<ApiResponse<void>> {
         return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/${id}`);
     }
+
+    /**
+     * Actualizar perfil del usuario autenticado
+     */
+    updateProfile(userData: Partial<User>): Observable<ApiResponse<User>> {
+        return this.http.patch<ApiResponse<User>>(`${this.apiUrl}/profile`, userData);
+    }
 }

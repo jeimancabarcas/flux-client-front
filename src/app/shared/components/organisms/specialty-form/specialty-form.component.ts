@@ -5,7 +5,6 @@ import { Specialty } from '../../../../core/models/specialty.model';
 
 @Component({
   selector: 'app-specialty-form',
-  standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
     <form [formGroup]="specialtyForm" (ngSubmit)="onSubmit()" class="space-y-6">
