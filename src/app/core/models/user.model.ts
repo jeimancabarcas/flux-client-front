@@ -20,9 +20,14 @@ export interface User {
     id: string;
     email: string;
     role: UserRole;
-    detalles: UserDetails | null; // Sincronizado con el backend (detalles en español)
-    specialties: Specialty[];    // Nodo de especialidades asignadas
+    detalles?: UserDetails | null; // Sincronizado con el backend (detalles en español)
+    details?: UserDetails | null;  // Algunos endpoints usan 'details' en inglés
+    specialties: Specialty[];      // Nodo de especialidades asignadas
     deletedAt: string | null;
+}
+
+export interface Doctor extends User {
+    role: UserRole.MEDICO;
 }
 
 export interface LoginRequest {

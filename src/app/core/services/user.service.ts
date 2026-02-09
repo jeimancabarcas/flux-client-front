@@ -52,4 +52,11 @@ export class UserService {
     updateProfile(userData: Partial<User>): Observable<ApiResponse<User>> {
         return this.http.patch<ApiResponse<User>>(`${this.apiUrl}/profile`, userData);
     }
+
+    /**
+     * Obtener todos los doctores
+     */
+    getDoctors(): Observable<ApiResponse<User[]>> {
+        return this.http.get<ApiResponse<User[]>>(`${this.apiUrl}/doctors`);
+    }
 }

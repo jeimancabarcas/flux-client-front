@@ -7,10 +7,11 @@ import { User, UserRole } from '../../../core/models/user.model';
 import { SidebarComponent } from '../../../shared/components/organisms/sidebar/sidebar.component';
 import { ModalComponent } from '../../../shared/components/molecules/modal/modal.component';
 import { UserFormComponent } from '../../../shared/components/organisms/user-form/user-form.component';
+import { TableComponent } from '../../../shared/components/organisms/table/table.component';
 
 @Component({
     selector: 'app-user-management',
-    imports: [CommonModule, SidebarComponent, ModalComponent, UserFormComponent],
+    imports: [CommonModule, SidebarComponent, ModalComponent, UserFormComponent, TableComponent],
     templateUrl: './user-management.component.html',
     styleUrl: './user-management.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush

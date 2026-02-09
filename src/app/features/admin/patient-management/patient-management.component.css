@@ -1,0 +1,71 @@
+/* PATIENT MANAGEMENT SWISS STYLE */
+:host {
+    display: block;
+    font-family: 'Inter', sans-serif;
+}
+
+/* 1. Global Stylings */
+* {
+    border-radius: 0 !important;
+}
+
+/* 2. Entrance Sequence */
+@keyframes swissFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-enter {
+    opacity: 0;
+    animation: swissFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: calc(var(--index) * 0.1s);
+}
+
+/* 3. Table Specifics */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th {
+    background: #f8fafc;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+tr:last-child {
+    border-bottom: none;
+}
+
+/* 4. Action Buttons */
+button {
+    cursor: pointer;
+    outline: none;
+}
+
+/* 5. Custom Scrollbar */
+main::-webkit-scrollbar {
+    width: 6px;
+}
+
+main::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+main::-webkit-scrollbar-thumb {
+    background: #000000;
+}
+
+@media (max-width: 1024px) {
+    h1 {
+        font-size: 2.5rem !important;
+    }
+}

@@ -40,77 +40,41 @@
                 </p>
             </div>
 
-            <!-- Swiss Data Table -->
-            <div class="border-[2px] border-black bg-white overflow-hidden animate-enter shadow-[10px_10px_0px_rgba(241,245,249,1)]"
-                style="--index: 2">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[600px]">
-                        <thead>
-                            <tr class="border-b-[2px] border-black bg-slate-50">
-                                <th
-                                    class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-100">
-                                    Nombre / Denominación</th>
-                                <th
-                                    class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-100">
-                                    Descripción / Alcance</th>
-                                <th class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Acciones
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (isLoading()) {
-                            <tr>
-                                <td colspan="3" class="p-20 text-center">
-                                    <span
-                                        class="text-[10px] font-black uppercase tracking-[0.5em] animate-pulse text-cyan-600">Sincronizando
-                                        Catálogo...</span>
-                                </td>
-                            </tr>
-                            } @else {
-                            @for (spec of specialties(); track spec.id) {
-                            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
-                                <td class="p-6 border-r border-slate-100">
-                                    <span class="text-sm font-black uppercase tracking-tight text-black">{{ spec.name
-                                        }}</span>
-                                </td>
-                                <td class="p-6 border-r border-slate-100">
-                                    <p
-                                        class="text-[11px] font-medium text-slate-500 uppercase leading-relaxed max-w-[60ch] line-clamp-2">
-                                        {{ spec.description || 'SIN DESCRIPCIÓN TÉCNICA REGISTRADA.' }}
-                                    </p>
-                                </td>
-                                <td class="p-6">
-                                    <div class="flex items-center gap-3">
-                                        <button (click)="openEditModal(spec)"
-                                            class="p-2 border border-slate-200 text-slate-400 hover:border-black hover:text-black transition-all">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 00-2 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                        </button>
-                                        <button (click)="openDeleteModal(spec)"
-                                            class="p-2 border border-slate-200 text-slate-400 hover:border-red-600 hover:text-red-600 transition-all">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            } @empty {
-                            <tr>
-                                <td colspan="3"
-                                    class="p-20 text-center text-[10px] font-black uppercase tracking-widest text-slate-300 italic">
-                                    No se detectaron especializaciones en el nodo central.
-                                </td>
-                            </tr>
-                            }
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <!-- Swiss Data Table Organism -->
+            <app-table [headers]="['Nombre / Denominación', 'Descripción / Alcance', 'Acciones']" [data]="specialties()"
+                [loading]="isLoading()"
+                emptyMessage="No se detectaron especializaciones en el nodo central facultativo.">
+
+                <ng-template #rowTemplate let-spec>
+                    <td class="p-6 border-r border-slate-100">
+                        <span class="text-sm font-black uppercase tracking-tight text-black">{{ spec.name }}</span>
+                    </td>
+                    <td class="p-6 border-r border-slate-100">
+                        <p
+                            class="text-[11px] font-medium text-slate-500 uppercase leading-relaxed max-w-[60ch] line-clamp-2">
+                            {{ spec.description || 'SIN DESCRIPCIÓN TÉCNICA REGISTRADA.' }}
+                        </p>
+                    </td>
+                    <td class="p-6">
+                        <div class="flex items-center gap-3">
+                            <button (click)="openEditModal(spec)"
+                                class="p-2 border border-slate-200 text-slate-400 hover:border-black hover:text-black transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 00-2 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <button (click)="openDeleteModal(spec)"
+                                class="p-2 border border-slate-200 text-slate-400 hover:border-red-600 hover:text-red-600 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </ng-template>
+            </app-table>
         </section>
     </main>
 

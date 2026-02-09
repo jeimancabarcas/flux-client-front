@@ -1,0 +1,276 @@
+<div class="flex h-screen overflow-hidden bg-white font-['Inter'] selection:bg-black selection:text-white relative">
+    <!-- Sidebar -->
+    <app-sidebar [isOpen]="isSidebarOpen()" (toggle)="toggleSidebar()"></app-sidebar>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto bg-slate-50/30">
+        <!-- Header -->
+        <header
+            class="h-20 border-b border-slate-100 bg-white flex items-center justify-between px-6 lg:px-12 flex-shrink-0">
+            <div class="flex items-center gap-4">
+                <button (click)="toggleSidebar()"
+                    class="lg:hidden p-2 -ml-2 text-slate-900 border border-black hover:bg-black hover:text-white transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <h2 class="text-xs font-black uppercase tracking-[0.4em] text-cyan-600">Gestión de Pacientes</h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <button (click)="openCreateModal()"
+                    class="bg-black text-white px-6 py-2 flex items-center gap-3 hover:bg-cyan-600 transition-all group shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+                    <span class="text-[10px] font-black uppercase tracking-widest">Nuevo Paciente</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Search Bar and Info -->
+        <section class="p-6 lg:p-12 pb-0">
+            <div class="mb-12 animate-enter" style="--index: 1">
+                <h1
+                    class="text-[3rem] lg:text-[4rem] font-black leading-[0.85] tracking-tighter text-black uppercase mb-4">
+                    Control de Pacientes
+                </h1>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    {{ totalRecords() }} registros activos en el nodo central.
+                </p>
+            </div>
+
+            <div class="mt-6 mb-8">
+                <div class="relative max-w-md">
+                    <input type="text" (input)="onSearch($any($event.target).value)" [value]="searchTerm()"
+                        class="w-full border-2 border-black p-4 pl-12 text-xs font-bold uppercase tracking-tight focus:outline-none focus:ring-2 focus:ring-black"
+                        placeholder="Buscar por nombre o identificación..." />
+                    <svg class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- Swiss Data Table Organism -->
+        <div class="px-8 animate-enter" style="--index: 2">
+            <app-table [headers]="['Identificación', 'Nombre Completo', 'Género', 'Teléfono', 'Email', 'Acciones']"
+                [data]="filteredPatients()" [loading]="isLoading()"
+                emptyMessage="No se encontraron registros de pacientes en el nodo clínico.">
+
+                <ng-template #rowTemplate let-patient>
+                    <td class="p-6 border-r border-slate-100 italic">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-xs font-black uppercase text-black">{{ patient.tipoIdentificacion
+                                }}</span>
+                            <span class="text-xs font-bold text-slate-400 tracking-tighter">{{
+                                patient.numeroIdentificacion }}</span>
+                        </div>
+                    </td>
+                    <td class="p-6 border-r border-slate-100">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-xs font-black uppercase tracking-tight text-black">{{ patient.nombres }}
+                                {{ patient.apellidos }}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Nacimiento:
+                                {{ patient.fechaNacimiento }}</span>
+                        </div>
+                    </td>
+                    <td class="p-6 border-r border-slate-100 text-center">
+                        <span
+                            class="inline-block px-3 py-1 border border-black text-[9px] font-black uppercase tracking-widest bg-slate-50">
+                            {{ patient.genero }}
+                        </span>
+                    </td>
+                    <td class="p-6 border-r border-slate-100 text-xs font-bold text-slate-600">
+                        {{ patient.telefono }}
+                    </td>
+                    <td class="p-6 border-r border-slate-100 text-xs font-medium text-slate-600 tracking-tight">
+                        {{ patient.email }}
+                    </td>
+                    <td class="p-6">
+                        <div class="flex items-center gap-3">
+                            <button (click)="openEditModal(patient)"
+                                class="p-2 border border-slate-200 text-slate-400 hover:border-black hover:text-black transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 00-2 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <button (click)="deletePatient(patient)"
+                                class="p-2 border border-slate-200 text-slate-400 hover:border-red-600 hover:text-red-600 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </ng-template>
+            </app-table>
+
+            <!-- Pagination Swiss Control -->
+            <div class="mt-8 flex items-center justify-between">
+                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                    Página {{ currentPage() }} / {{ totalPages() }}
+                </p>
+                <div class="flex border border-black p-1 bg-white">
+                    <button (click)="prevPage()" [disabled]="currentPage() === 1"
+                        class="px-5 py-2 text-[9px] font-black uppercase tracking-widest transition-all hover:bg-black hover:text-white disabled:opacity-20">
+                        Anterior
+                    </button>
+                    <button (click)="nextPage()" [disabled]="currentPage() === totalPages()"
+                        class="px-5 py-2 text-[9px] font-black uppercase tracking-widest border-l border-slate-100 transition-all hover:bg-black hover:text-white disabled:opacity-20">
+                        Siguiente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Patient Form Modal -->
+    <app-modal [isOpen]="isFormModalOpen()" (close)="isFormModalOpen.set(false)"
+        [title]="selectedPatient() ? 'Protocolo / Editar Paciente' : 'Protocolo / Nuevo Registro'">
+        <form [formGroup]="patientForm" (ngSubmit)="onSubmit()" class="space-y-8 p-2">
+            <div class="space-y-8">
+
+                <!-- Sección 01: Identidad -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-600">01 / Identidad
+                            <span class="text-red-500">*</span></span>
+                        <div class="h-[1px] flex-1 bg-slate-100"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label
+                                class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Nombres</label>
+                            <input type="text" formControlName="nombres"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200"
+                                placeholder="NOMBRES DEL PACIENTE" />
+                        </div>
+                        <div class="space-y-2">
+                            <label
+                                class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Apellidos</label>
+                            <input type="text" formControlName="apellidos"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200"
+                                placeholder="APELLIDOS DEL PACIENTE" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Tipo de
+                                Identificación</label>
+                            <select formControlName="tipoIdentificacion"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all appearance-none bg-white font-bold">
+                                <option value="CC">Cédula de Ciudadanía</option>
+                                <option value="TI">Tarjeta de Identidad</option>
+                                <option value="CE">Cédula de Extranjería</option>
+                                <option value="PA">Pasaporte</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Número
+                                de ID</label>
+                            <input type="text" formControlName="numeroIdentificacion"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200"
+                                placeholder="000.000.000" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha
+                                de Nacimiento</label>
+                            <input type="date" formControlName="fechaNacimiento"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all" />
+                        </div>
+                        <div class="space-y-2">
+                            <label
+                                class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Género</label>
+                            <select formControlName="genero"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all appearance-none bg-white font-bold">
+                                <option value="">SELECCIONE...</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 02: Contacto -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">02 / Contacto y
+                            Ubicación</span>
+                        <div class="h-[1px] flex-1 bg-slate-100"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Email
+                                de Contacto</label>
+                            <input type="email" formControlName="email"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200"
+                                placeholder="PACIENTE@EMAIL.COM" />
+                        </div>
+                        <div class="space-y-2">
+                            <label
+                                class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Teléfono /
+                                Celular</label>
+                            <input type="tel" formControlName="telefono"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200"
+                                placeholder="300 000 0000" />
+                        </div>
+                        <div class="space-y-2 md:col-span-2">
+                            <label
+                                class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Dirección
+                                de Residencia</label>
+                            <input type="text" formControlName="direccion"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200"
+                                placeholder="CALLE 00 #00 - 00" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 03: Legal -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">03 / Protocolos
+                            Legales</span>
+                        <div class="h-[1px] flex-1 bg-slate-100"></div>
+                    </div>
+
+                    <div class="p-6 border border-slate-200 bg-slate-50/50">
+                        <label class="flex items-center gap-4 cursor-pointer group">
+                            <input type="checkbox" formControlName="habeasDataConsent" id="habeasData"
+                                class="w-4 h-4 rounded-none border-black text-black focus:ring-0 transition-all cursor-pointer" />
+                            <div class="space-y-1">
+                                <span
+                                    class="block text-[10px] font-black uppercase tracking-widest text-slate-900 group-hover:text-cyan-600 transition-colors select-none">
+                                    Acepto el tratamiento de datos personales (Habeas Data)
+                                </span>
+                                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                                    Requerido para el procesamiento de la ficha clínica.
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="pt-8 flex flex-col sm:flex-row gap-4 border-t border-slate-100">
+                <button type="submit" [disabled]="patientForm.invalid || isLoading()"
+                    class="flex-1 bg-black text-white p-5 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-cyan-600 disabled:opacity-20 transition-all font-['Inter'] shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+                    @if (isLoading()) { PROCESANDO... } @else { {{ selectedPatient() ? 'GUARDAR CAMBIOS' : 'CONFIRMAR
+                    REGISTRO' }} }
+                </button>
+                <button type="button" (click)="isFormModalOpen.set(false)"
+                    class="px-8 border border-black p-5 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 transition-all font-['Inter']">
+                    CANCELAR
+                </button>
+            </div>
+        </form>
+    </app-modal>
+</div>

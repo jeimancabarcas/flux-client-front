@@ -53,3 +53,23 @@ nav button:hover::before {
 .animate-fade-in {
     animation: fadeIn 0.3s ease forwards;
 }
+
+/* Custom Scrollbar Swiss Style */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #000000;
+    border-radius: 0;
+}
+
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #000000 transparent;
+}

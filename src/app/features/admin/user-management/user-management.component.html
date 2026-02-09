@@ -42,116 +42,71 @@
                 </p>
             </div>
 
-            <!-- Swiss Data Table -->
-            <div class="border-[2px] border-black bg-white overflow-hidden animate-enter shadow-[10px_10px_0px_rgba(241,245,249,1)]"
-                style="--index: 2">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[800px]">
-                        <thead>
-                            <tr class="border-b-[2px] border-black bg-slate-50">
-                                <th
-                                    class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-100">
-                                    ID / Código</th>
-                                <th
-                                    class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-100">
-                                    Identidad / Nombre</th>
-                                <th
-                                    class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-100">
-                                    Credencial / Email</th>
-                                <th
-                                    class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-100">
-                                    Facultad / Rol</th>
-                                <th
-                                    class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-100">
-                                    Especialidades</th>
-                                <th class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Acciones
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (isLoading()) {
-                            <tr>
-                                <td colspan="6" class="p-20 text-center">
-                                    <span
-                                        class="text-[10px] font-black uppercase tracking-[0.5em] animate-pulse text-cyan-600">Procesando
-                                        Datos...</span>
-                                </td>
-                            </tr>
-                            } @else {
-                            @for (user of users(); track user.id) {
-                            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
-                                <td
-                                    class="p-6 text-[11px] font-bold text-slate-400 font-mono border-r border-slate-100 italic">
-                                    #{{ user.id.substring(0,8) }}</td>
-                                <td class="p-6 border-r border-slate-100">
-                                    @if (user.details) {
-                                    <span class="block text-xs font-black uppercase tracking-tight text-black">{{
-                                        user.details.nombre }} {{ user.details.apellido }}</span>
-                                    <span
-                                        class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">C.C.
-                                        {{ user.details.cedula }}</span>
-                                    } @else {
-                                    <span
-                                        class="block text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">Sin
-                                        Detalles Registrados</span>
-                                    }
-                                </td>
-                                <td
-                                    class="p-6 text-xs font-medium text-slate-600 border-r border-slate-100 tracking-tight">
-                                    {{ user.email }}</td>
-                                <td class="p-6 border-r border-slate-100 text-center">
-                                    <span
-                                        class="inline-block px-3 py-1 border border-black text-[9px] font-black uppercase tracking-widest"
-                                        [class.bg-purple-100]="user.role === UserRole.ADMIN"
-                                        [class.bg-blue-100]="user.role === UserRole.MEDICO"
-                                        [class.bg-green-100]="user.role === UserRole.RECEPCIONISTA">
-                                        {{ user.role }}
-                                    </span>
-                                </td>
-                                <td class="p-6 border-r border-slate-100">
-                                    <div class="flex flex-wrap gap-1">
-                                        @for (spec of user.specialties; track spec.id) {
-                                        <span
-                                            class="inline-block px-2 py-0.5 border border-slate-200 text-[8px] font-bold uppercase tracking-widest text-slate-500">
-                                            {{ spec.name }}
-                                        </span>
-                                        } @empty {
-                                        <span
-                                            class="text-[9px] font-medium text-slate-300 uppercase italic">Ninguna</span>
-                                        }
-                                    </div>
-                                </td>
-                                <td class="p-6">
-                                    <div class="flex items-center gap-3">
-                                        <button (click)="openEditModal(user)"
-                                            class="p-2 border border-slate-200 text-slate-400 hover:border-black hover:text-black transition-all">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 00-2 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                        </button>
-                                        <button (click)="openDeleteModal(user)"
-                                            class="p-2 border border-slate-200 text-slate-400 hover:border-red-600 hover:text-red-600 transition-all">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+            <!-- Swiss Data Table Organism -->
+            <app-table
+                [headers]="['ID / Código', 'Identidad / Nombre', 'Credencial / Email', 'Facultad / Rol', 'Especialidades', 'Acciones']"
+                [data]="users()" [loading]="isLoading()"
+                emptyMessage="No se detectaron nodos de usuario en el sistema central.">
+
+                <ng-template #rowTemplate let-user>
+                    <td class="p-6 text-[11px] font-bold text-slate-400 font-mono border-r border-slate-100 italic">
+                        #{{ user.id.substring(0,8) }}
+                    </td>
+                    <td class="p-6 border-r border-slate-100">
+                        @if (user.details) {
+                        <span class="block text-xs font-black uppercase tracking-tight text-black">{{
+                            user.details.nombre }} {{ user.details.apellido }}</span>
+                        <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">C.C. {{
+                            user.details.cedula }}</span>
+                        } @else {
+                        <span class="block text-[10px] font-bold text-slate-300 uppercase tracking-widest italic">Sin
+                            Detalles Registrados</span>
+                        }
+                    </td>
+                    <td class="p-6 text-xs font-medium text-slate-600 border-r border-slate-100 tracking-tight">
+                        {{ user.email }}
+                    </td>
+                    <td class="p-6 border-r border-slate-100 text-center">
+                        <span
+                            class="inline-block px-3 py-1 border border-black text-[9px] font-black uppercase tracking-widest"
+                            [class.bg-purple-100]="user.role === UserRole.ADMIN"
+                            [class.bg-blue-100]="user.role === UserRole.MEDICO"
+                            [class.bg-green-100]="user.role === UserRole.RECEPCIONISTA">
+                            {{ user.role }}
+                        </span>
+                    </td>
+                    <td class="p-6 border-r border-slate-100">
+                        <div class="flex flex-wrap gap-1">
+                            @for (spec of user.specialties; track spec.id) {
+                            <span
+                                class="inline-block px-2 py-0.5 border border-slate-200 text-[8px] font-bold uppercase tracking-widest text-slate-500">
+                                {{ spec.name }}
+                            </span>
                             } @empty {
-                            <tr>
-                                <td colspan="6"
-                                    class="p-20 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
-                                    No se detectaron nodos de usuario en el sistema.</td>
-                            </tr>
+                            <span class="text-[9px] font-medium text-slate-300 uppercase italic">Ninguna</span>
                             }
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                        </div>
+                    </td>
+                    <td class="p-6">
+                        <div class="flex items-center gap-3">
+                            <button (click)="openEditModal(user)"
+                                class="p-2 border border-slate-200 text-slate-400 hover:border-black hover:text-black transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 00-2 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <button (click)="openDeleteModal(user)"
+                                class="p-2 border border-slate-200 text-slate-400 hover:border-red-600 hover:text-red-600 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </ng-template>
+            </app-table>
         </section>
     </main>
 

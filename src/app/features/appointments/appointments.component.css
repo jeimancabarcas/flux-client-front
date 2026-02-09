@@ -1,0 +1,84 @@
+/* APPOINTMENTS SWISS STYLE - High Precision Edition */
+
+:host {
+    display: block;
+    font-family: 'Inter', sans-serif;
+}
+
+/* 1. Global Stylings - Force Sharpness */
+* {
+    border-radius: 0 !important;
+}
+
+/* 2. Entrance Sequence */
+@keyframes swissFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-enter {
+    opacity: 0;
+    animation: swissFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+    animation: swissFadeIn 0.4s ease-out;
+}
+
+/* 3. Layout Specifics */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #000000;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #333333;
+}
+
+/* 4. Hour markers in grid */
+.hour-marker {
+    position: relative;
+}
+
+.hour-marker::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* 5. Tooltip and Overlays */
+.tooltip-panel {
+    z-index: 100 !important;
+    border-width: 2px !important;
+}
+
+/* 6. Typography adjustments for Brutalism */
+h1,
+h2,
+h3 {
+    letter-spacing: -0.05em !important;
+}
+
+@media (max-width: 1024px) {
+    header h2 {
+        font-size: 1.25rem !important;
+    }
+}

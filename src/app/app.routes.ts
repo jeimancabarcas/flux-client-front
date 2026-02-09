@@ -25,7 +25,7 @@ export const routes: Routes = [
     {
         path: 'appointments',
         canActivate: [authGuard],
-        loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
+        loadComponent: () => import('./features/appointments/appointments.component').then(m => m.AppointmentsComponent)
     },
     {
         path: 'admin/users',
@@ -36,6 +36,11 @@ export const routes: Routes = [
         path: 'admin/specialties',
         canActivate: [authGuard],
         loadComponent: () => import('./features/admin/specialty-management/specialty-management.component').then(m => m.SpecialtyManagementComponent)
+    },
+    {
+        path: 'admin/patients',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/admin/patient-management/patient-management.component').then(m => m.PatientManagementComponent)
     },
     {
         path: '**',

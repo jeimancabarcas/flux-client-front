@@ -1,0 +1,443 @@
+<div class="flex h-screen overflow-hidden bg-white font-['Inter'] selection:bg-black selection:text-white relative">
+    <!-- Sidebar Component -->
+    <app-sidebar [isOpen]="isSidebarOpen()" (toggle)="toggleSidebar()" />
+
+    <main class="flex-1 flex flex-col min-w-0 bg-slate-50/30 relative">
+        <!-- Calendar Header -->
+        <header
+            class="h-20 border-b border-slate-100 bg-white flex items-center justify-between px-6 lg:px-12 flex-shrink-0 z-10">
+            <div class="flex items-center gap-6">
+                <button (click)="toggleSidebar()"
+                    class="lg:hidden p-2 -ml-2 text-slate-900 border border-black hover:bg-black hover:text-white transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+
+                <h2 class="text-xs font-black uppercase tracking-[0.4em] text-cyan-600">{{ monthLabel() }}</h2>
+
+                <div class="flex items-center border border-black p-1 bg-white">
+                    <button (click)="prev()" class="p-2 hover:bg-black hover:text-white transition-all text-slate-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <button (click)="today()"
+                        class="px-4 py-2 text-[9px] font-black uppercase tracking-[0.2em] hover:bg-black hover:text-white transition-all border-x border-slate-100">Hoy</button>
+                    <button (click)="next()" class="p-2 hover:bg-black hover:text-white transition-all text-slate-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="hidden md:flex border border-black p-1 bg-white">
+                    <button (click)="setView('day')" [class.bg-black]="viewMode() === 'day'"
+                        [class.text-white]="viewMode() === 'day'"
+                        class="px-5 py-2 text-[9px] font-black uppercase tracking-widest transition-all">Día</button>
+                    <button (click)="setView('week')" [class.bg-black]="viewMode() === 'week'"
+                        [class.text-white]="viewMode() === 'week'"
+                        class="px-5 py-2 text-[9px] font-black uppercase tracking-widest border-x border-slate-100 transition-all">Semana</button>
+                    <button (click)="setView('month')" [class.bg-black]="viewMode() === 'month'"
+                        [class.text-white]="viewMode() === 'month'"
+                        class="px-5 py-2 text-[9px] font-black uppercase tracking-widest transition-all">Mes</button>
+                </div>
+
+                <button (click)="openCreateModal()"
+                    class="bg-black text-white px-6 py-2 flex items-center gap-3 hover:bg-cyan-600 transition-all group shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+                    <span class="text-[10px] font-black uppercase tracking-widest">Nueva Cita</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Calendar Container -->
+        <div class="flex-1 overflow-auto custom-scrollbar p-6">
+
+            <!-- MONTH VIEW -->
+            @if (viewMode() === 'month') {
+            <div
+                class="bg-white border-[2px] border-black overflow-hidden animate-enter shadow-[10px_10px_0px_rgba(241,245,249,1)]">
+                <div class="grid grid-cols-7 border-b border-slate-100 italic">
+                    @for (day of daysOfWeek; track day) {
+                    <div class="p-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ day
+                        }}</div>
+                    }
+                </div>
+                <div class="grid grid-cols-7">
+                    @for (date of daysInView(); track date.getTime()) {
+                    <div class="min-h-[140px] border-r border-b border-slate-50 p-3 hover:bg-slate-50 transition-colors group relative"
+                        [class.bg-slate-50/30]="date.getMonth() !== currentDate().getMonth()">
+                        <span class="inline-block w-8 h-8 leading-8 text-center text-xs font-bold transition-all"
+                            [class.bg-black]="isToday(date)" [class.text-white]="isToday(date)"
+                            [class.text-slate-400]="date.getMonth() !== currentDate().getMonth()">
+                            {{ date.getDate() }}
+                        </span>
+
+                        <!-- Appointments in Month View -->
+                        <div class="mt-2 space-y-1">
+                            @for (app of getAppointmentsForDay(date).slice(0, 3); track app.id) {
+                            <div class="relative">
+                                <!-- Click Detail Panel (Premium Tooltip) - Mes -->
+                                <div (click)="toggleTooltip(app.id, $event)"
+                                    class="px-2 py-1 text-[9px] font-bold bg-cyan-50 text-cyan-700 border-l-2 border-cyan-500 truncate uppercase tracking-tighter cursor-pointer hover:bg-cyan-100 transition-colors">
+                                    {{ app.patient?.nombres }}
+                                </div>
+
+                                <div [class.opacity-100]="activeTooltipId() === app.id"
+                                    [class.visible]="activeTooltipId() === app.id"
+                                    class="absolute left-full ml-4 top-0 w-64 bg-white shadow-2xl border-2 border-black p-4 z-[100] opacity-0 invisible transition-all duration-200 transform translate-x-2"
+                                    [class.translate-x-0]="activeTooltipId() === app.id">
+
+                                    <button (click)="closeTooltip()"
+                                        class="absolute top-2 right-2 p-1 hover:bg-slate-100 transition-colors">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                    <div class="flex flex-col gap-3">
+                                        <div class="pb-2 border-b border-slate-50">
+                                            <p
+                                                class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                                Paciente</p>
+                                            <p class="text-sm font-black text-black leading-none whitespace-normal">{{
+                                                app.patient?.nombres }} {{ app.patient?.apellidos }}</p>
+                                            <p class="text-[10px] font-bold text-slate-500 mt-1">ID: {{
+                                                app.patient?.numeroIdentificacion }}</p>
+                                            <p class="text-[10px] font-bold text-cyan-600 mt-1">📞 {{
+                                                app.patient?.telefono }}</p>
+                                        </div>
+                                        <div>
+                                            <p
+                                                class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                                Médico Asignado</p>
+                                            <p class="text-[11px] font-black text-black leading-none whitespace-normal">
+                                                DR. {{ app.doctor?.detalles?.nombre }} {{ app.doctor?.detalles?.apellido
+                                                }}</p>
+                                        </div>
+                                        <div class="pt-3 border-t border-slate-100 flex flex-col gap-2">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span
+                                                    class="text-[10px] font-black px-2 py-1 border border-black uppercase tracking-wider"
+                                                    [class]="getStatusClasses(app.status)">
+                                                    {{ app.status }}
+                                                </span>
+                                            </div>
+
+                                            @if (canEdit(app.status)) {
+                                            <div class="flex gap-2">
+                                                <button (click)="openEditModal(app, $event)"
+                                                    class="flex-1 bg-black text-white text-[9px] font-black uppercase py-2 hover:bg-cyan-600 transition-all">
+                                                    Editar
+                                                </button>
+                                                <button (click)="deleteAppointment(app.id, $event)"
+                                                    class="px-3 border border-red-600 text-red-600 hover:bg-red-50 transition-all font-black text-[9px] uppercase">
+                                                    X
+                                                </button>
+                                            </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            }
+                            @if (getAppointmentsForDay(date).length > 3) {
+                            <div class="text-[9px] font-black text-slate-400 pl-2 uppercase tracking-tighter">+ {{
+                                getAppointmentsForDay(date).length - 3 }} más</div>
+                            }
+                        </div>
+
+                        <button (click)="openCreateModal(date)"
+                            class="absolute bottom-2 right-2 p-1 bg-white border border-black opacity-0 group-hover:opacity-100 transition-all shadow-sm">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+
+            <!-- WEEK / DAY VIEW -->
+            @if (viewMode() === 'week' || viewMode() === 'day') {
+            <div
+                class="bg-white border-[2px] border-black overflow-hidden flex flex-col animate-enter shadow-[10px_10px_0px_rgba(241,245,249,1)]">
+                <!-- Week Header -->
+                <div class="flex border-b border-slate-100">
+                    <div class="w-20 border-r border-slate-100"></div>
+                    <div class="flex-1 grid" [style.grid-template-columns]="'repeat(' + daysInView().length + ', 1fr)'">
+                        @for (date of daysInView(); track date.getTime()) {
+                        <div class="p-6 text-center border-r border-slate-50 last:border-0">
+                            <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">{{
+                                daysOfWeek[date.getDay()] }}</div>
+                            <div class="w-10 h-10 leading-10 mx-auto text-lg font-black transition-all"
+                                [class.bg-black]="isToday(date)" [class.text-white]="isToday(date)">
+                                {{ date.getDate() }}
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Grid Body -->
+                <div class="flex flex-1 relative custom-scrollbar overflow-y-auto" style="height: 1200px;">
+                    <!-- Hours Labels -->
+                    <div class="w-20 border-r border-slate-100 bg-slate-50/50">
+                        @for (hour of hours; track hour) {
+                        <div class="h-[60px] text-[10px] font-black text-slate-400 text-center pt-2 italic">
+                            {{ hour.toString().padStart(2, '0') }}:00
+                        </div>
+                        }
+                    </div>
+
+                    <!-- Days Columns -->
+                    <div class="flex-1 grid relative"
+                        [style.grid-template-columns]="'repeat(' + daysInView().length + ', 1fr)'">
+                        @for (date of daysInView(); track date.getTime()) {
+                        <div class="relative border-r border-slate-50 last:border-0 group">
+                            <!-- Horizontal lines -->
+                            @for (hour of hours; track hour) {
+                            <div class="h-[60px] border-b border-slate-50 cursor-pointer hover:bg-slate-50/50 transition-colors"
+                                (click)="openCreateModal(date, hour)"></div>
+                            }
+
+                            <!-- Appointments Cards -->
+                            @for (app of getAppointmentsForDay(date); track app.id) {
+                            <div (click)="toggleTooltip(app.id, $event)"
+                                class="absolute p-3 shadow-lg hover:z-[40] transition-all cursor-pointer group/card border-l-4 border-y border-r border-slate-200"
+                                [class.z-[50]]="activeTooltipId() === app.id" [class]="getStatusClasses(app.status)"
+                                [style.top]="getPosition(app).top" [style.height]="getPosition(app).height"
+                                [style.left]="getPosition(app).left" [style.width]="getPosition(app).width">
+
+                                <div class="flex flex-col h-full uppercase tracking-tighter relative">
+                                    <div class="flex justify-between items-start gap-1">
+                                        <span class="text-[10px] font-black truncate">
+                                            {{ app.patient?.nombres }} {{ app.patient?.apellidos }}
+                                        </span>
+                                        @if (app.status === AppointmentStatus.EN_CONSULTA) {
+                                        <span class="flex h-2 w-2 bg-cyan-500 animate-pulse"></span>
+                                        }
+                                    </div>
+                                    <span class="text-[8px] font-bold opacity-70 mt-1 truncate">{{ app.reason }}</span>
+
+                                    <div class="mt-auto flex justify-between items-center">
+                                        <span class="text-[7px] font-black opacity-40">DR. {{
+                                            app.doctor?.detalles?.nombre }}</span>
+                                        <span class="text-[7px] font-black py-0.5 px-1 rounded bg-black/5">
+                                            {{ getDuration(app) }} MIN
+                                        </span>
+                                    </div>
+
+                                    <!-- Click Detail Panel -->
+                                    <div [class.opacity-100]="activeTooltipId() === app.id"
+                                        [class.visible]="activeTooltipId() === app.id"
+                                        class="absolute bg-white shadow-2xl border-2 border-black p-4 z-[100] opacity-0 invisible transition-all duration-200 transform"
+                                        [class.left-full]="viewMode() !== 'day'" [class.ml-4]="viewMode() !== 'day'"
+                                        [class.top-0]="viewMode() !== 'day'"
+                                        [class.translate-x-2]="viewMode() !== 'day' && activeTooltipId() !== app.id"
+                                        [class.translate-x-0]="viewMode() !== 'day' && activeTooltipId() === app.id"
+                                        [class.top-full]="viewMode() === 'day'" [class.left-0]="viewMode() === 'day'"
+                                        [class.mt-2]="viewMode() === 'day'"
+                                        [class.translate-y-2]="viewMode() === 'day' && activeTooltipId() !== app.id"
+                                        [class.translate-y-0]="viewMode() === 'day' && activeTooltipId() === app.id"
+                                        style="width: 280px;">
+
+                                        <button (click)="closeTooltip()"
+                                            class="absolute top-2 right-2 p-1 hover:bg-slate-100 transition-colors">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        <div class="flex flex-col gap-3">
+                                            <div class="pb-2 border-b border-slate-50">
+                                                <p
+                                                    class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                                    Paciente</p>
+                                                <p class="text-sm font-black text-black leading-none">{{
+                                                    app.patient?.nombres }} {{ app.patient?.apellidos }}</p>
+                                                <p class="text-[10px] font-bold text-slate-500 mt-1">ID: {{
+                                                    app.patient?.numeroIdentificacion }}</p>
+                                                <p class="text-[10px] font-bold text-cyan-600 mt-1">📞 {{
+                                                    app.patient?.telefono }}</p>
+                                            </div>
+                                            <div>
+                                                <p
+                                                    class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                                    Médico Asignado</p>
+                                                <p class="text-[11px] font-black text-black leading-none">DR. {{
+                                                    app.doctor?.detalles?.nombre }} {{ app.doctor?.detalles?.apellido }}
+                                                </p>
+                                                <p class="text-[9px] font-bold text-slate-400 mt-0.5">{{
+                                                    app.doctor?.email }}</p>
+                                            </div>
+                                            <div class="pt-3 border-t border-slate-100 flex flex-col gap-2">
+                                                <div class="flex justify-between items-center mb-1">
+                                                    <span
+                                                        class="text-[10px] font-black px-2 py-1 border border-black uppercase tracking-wider"
+                                                        [class.bg-amber-100]="app.status === AppointmentStatus.PENDIENTE"
+                                                        [class.text-amber-700]="app.status === AppointmentStatus.PENDIENTE"
+                                                        [class.bg-emerald-100]="app.status === AppointmentStatus.CONFIRMADA"
+                                                        [class.text-emerald-700]="app.status === AppointmentStatus.CONFIRMADA"
+                                                        [class.bg-cyan-100]="app.status === AppointmentStatus.EN_CONSULTA"
+                                                        [class.text-cyan-700]="app.status === AppointmentStatus.EN_CONSULTA"
+                                                        [class.bg-slate-100]="app.status === AppointmentStatus.COMPLETADA"
+                                                        [class.text-slate-700]="app.status === AppointmentStatus.COMPLETADA"
+                                                        [class.bg-rose-100]="app.status === AppointmentStatus.CANCELADA"
+                                                        [class.text-rose-700]="app.status === AppointmentStatus.CANCELADA">
+                                                        {{ app.status }}
+                                                    </span>
+                                                </div>
+
+                                                @if (canEdit(app.status)) {
+                                                <div class="flex gap-2">
+                                                    <button (click)="openEditModal(app, $event)"
+                                                        class="flex-1 bg-black text-white text-[9px] font-black uppercase py-2 hover:bg-cyan-600 transition-all">
+                                                        Editar Programación
+                                                    </button>
+                                                    <button (click)="deleteAppointment(app.id, $event)"
+                                                        class="px-3 border border-red-600 text-red-600 hover:bg-red-50 transition-all font-black text-[9px] uppercase">
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            }
+                        </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+    </main>
+
+    <!-- Appointment Modal -->
+    <app-modal [isOpen]="isFormModalOpen()" (close)="isFormModalOpen.set(false)"
+        title="Protocolo / Programación de Cita">
+        <form [formGroup]="appointmentForm" (ngSubmit)="onSubmit()" class="space-y-8 p-2">
+            <div class="space-y-8">
+
+                <!-- Sección 01: Participantes -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-600">01 / Participantes
+                            <span class="text-red-500">*</span></span>
+                        <div class="h-[1px] flex-1 bg-slate-100"></div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- Patient Selection -->
+                        <div class="space-y-2">
+                            <app-searchable-select formControlName="patientId" [label]="'Paciente'"
+                                [options]="patientOptions()" [placeholder]="'BUSCAR PACIENTE...'"
+                                [loading]="searchingPatients()" [emptyMessage]="'NO SE ENCONTRARON REGISTROS'"
+                                (searchChange)="searchPatients($event)">
+                            </app-searchable-select>
+                        </div>
+
+                        <!-- Doctor Selection -->
+                        <div class="space-y-2">
+                            <app-searchable-select formControlName="doctorId" [label]="'Médico Facultativo'"
+                                [options]="doctorOptions()" [placeholder]="'BUSCAR MÉDICO POR ESPECIALIDAD...'"
+                                [loading]="loadingDoctors()" [emptyMessage]="'NO SE DETECTARON MÉDICOS'">
+                            </app-searchable-select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 02: Cronograma -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">02 / Cronograma
+                            Operativo</span>
+                        <div class="h-[1px] flex-1 bg-slate-100"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha
+                                de Intervención</label>
+                            <input type="date" formControlName="startTime"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Hora de
+                                Inicio</label>
+                            <input type="time" formControlName="horaInicio"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <label
+                                class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Duración
+                                del Bloque</label>
+                            <select formControlName="duracion"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all appearance-none bg-white font-bold placeholder:text-slate-200">
+                                <option [value]="15">15 Minutos</option>
+                                <option [value]="30">30 Minutos</option>
+                                <option [value]="45">45 Minutos</option>
+                                <option [value]="60">1 Hora (Estándar)</option>
+                                <option [value]="90">1.5 Horas (Extendido)</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Estado
+                                de la Cita</label>
+                            <select formControlName="status"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all appearance-none bg-white font-bold placeholder:text-slate-200">
+                                <option [value]="AppointmentStatus.PENDIENTE">Pendiente</option>
+                                <option [value]="AppointmentStatus.CONFIRMADA">Confirmada</option>
+                                <option [value]="AppointmentStatus.EN_CONSULTA">En Consulta</option>
+                                <option [value]="AppointmentStatus.COMPLETADA">Completada</option>
+                                <option [value]="AppointmentStatus.CANCELADA">Cancelada</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 03: Protocolo -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">03 / Protocolo /
+                            Motivo</span>
+                        <div class="h-[1px] flex-1 bg-slate-100"></div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Descripción
+                            Técnica / Observaciones</label>
+                        <textarea formControlName="reason" rows="3"
+                            class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all resize-none placeholder:text-slate-200"
+                            placeholder="DESCRIPCIÓN DEL MOTIVO DE CONSULTA..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones de Ejecución -->
+            <div class="pt-8 flex flex-col sm:flex-row gap-4 border-t border-slate-100">
+                <button type="submit" [disabled]="appointmentForm.invalid || isLoading()"
+                    class="flex-1 bg-black text-white p-5 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-cyan-600 disabled:opacity-20 transition-all font-['Inter'] shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+                    @if (isLoading()) { PROCESANDO... } @else { {{ selectedAppointment() ? 'ACTUALIZAR PROGRAMACIÓN' :
+                    'CONFIRMAR CITA' }} }
+                </button>
+                <button type="button" (click)="isFormModalOpen.set(false)"
+                    class="px-8 border border-black p-5 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 transition-all font-['Inter']">
+                    CANCELAR
+                </button>
+            </div>
+        </form>
+    </app-modal>
+</div>

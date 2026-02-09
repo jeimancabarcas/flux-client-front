@@ -1,0 +1,67 @@
+@if (label()) {
+<label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+    {{ label() }}
+</label>
+}
+
+<div class="space-y-2">
+    <!-- Selected Value Display / Trigger -->
+    <button type="button" (click)="toggleDropdown()"
+        class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all text-left flex items-center justify-between bg-white hover:border-slate-300">
+        <span [class.text-slate-400]="!selectedValue()">
+            {{ selectedLabel() || placeholder() }}
+        </span>
+        <svg class="w-5 h-5 text-slate-400 transition-transform" [class.rotate-180]="isOpen()" fill="none"
+            stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+
+    <!-- Dropdown Panel (Expands naturally) -->
+    @if (isOpen()) {
+    <div class="w-full bg-white border border-slate-200 shadow-2xl overflow-hidden">
+        <!-- Search Input -->
+        <div class="p-3 border-b border-slate-100">
+            <div class="relative">
+                <input type="text" [value]="searchTerm()" (input)="onSearchInput($event)"
+                    class="w-full border border-slate-200 p-4 pl-10 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200"
+                    [placeholder]="placeholder()" />
+                <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                @if (loading()) {
+                <div class="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div class="w-4 h-4 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                }
+            </div>
+        </div>
+
+        <!-- Options List -->
+        <div class="max-h-64 overflow-y-auto">
+            @if (filteredOptions().length === 0) {
+            <div class="p-6 text-center text-xs font-bold text-slate-400 uppercase tracking-tight">
+                {{ emptyMessage() }}
+            </div>
+            } @else {
+            @for (option of filteredOptions(); track option.value) {
+            <button type="button" (click)="selectOption(option)"
+                class="w-full p-4 text-left hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 flex flex-col gap-1"
+                [class.bg-cyan-50]="option.value === selectedValue()">
+                <span class="text-xs font-black uppercase tracking-tight text-black">
+                    {{ option.label }}
+                </span>
+                @if (option.sublabel) {
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                    {{ option.sublabel }}
+                </span>
+                }
+            </button>
+            }
+            }
+        </div>
+    </div>
+    }
+</div>

@@ -7,10 +7,11 @@ import { Specialty } from '../../../core/models/specialty.model';
 import { SidebarComponent } from '../../../shared/components/organisms/sidebar/sidebar.component';
 import { ModalComponent } from '../../../shared/components/molecules/modal/modal.component';
 import { SpecialtyFormComponent } from '../../../shared/components/organisms/specialty-form/specialty-form.component';
+import { TableComponent } from '../../../shared/components/organisms/table/table.component';
 
 @Component({
     selector: 'app-specialty-management',
-    imports: [CommonModule, SidebarComponent, ModalComponent, SpecialtyFormComponent],
+    imports: [CommonModule, SidebarComponent, ModalComponent, SpecialtyFormComponent, TableComponent],
     templateUrl: './specialty-management.component.html',
     styleUrl: './specialty-management.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush
