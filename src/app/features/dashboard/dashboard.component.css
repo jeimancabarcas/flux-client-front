@@ -1,1 +1,121 @@
-/* Dashboard component styles */
+/* DASHBOARD SWISS TRADITIONAL SIDEBAR - Clinical Edition */
+
+:host {
+    display: block;
+    font-family: 'Inter', sans-serif;
+}
+
+/* 1. Global Reset to Rigid Geometry */
+* {
+    border-radius: 0 !important;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* 2. Layout Structure */
+.h-screen {
+    height: 100vh;
+}
+
+/* 3. Sidebar Specifics */
+aside {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.02);
+}
+
+nav button {
+    outline: none;
+    position: relative;
+    overflow: hidden;
+}
+
+nav button::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 100%;
+    background: #000;
+    transition: width 0.2s ease;
+    z-index: -1;
+}
+
+nav button:hover::before {
+    width: 4px;
+    /* Tiny indicator line on hover */
+}
+
+/* 4. Typography Precision */
+h1,
+h2,
+h3 {
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 0.85;
+}
+
+.animate-enter {
+    opacity: 0;
+    animation: swissFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: calc(var(--index) * 0.1s);
+}
+
+@keyframes swissFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 5. Custom Elements */
+.bg-slate-50\/30 {
+    background-color: rgba(248, 250, 252, 0.3);
+}
+
+/* 6. Scrollbar Styling (Minimalist) */
+main::-webkit-scrollbar {
+    width: 4px;
+}
+
+main::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+main::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+}
+
+main::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+}
+
+/* 7. Responsive Fixes & Drawer Transitions */
+@media (max-width: 1024px) {
+    aside {
+        transform: translateX(-100%);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    aside.sidebar-open {
+        transform: translateX(0) !important;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease forwards;
+}

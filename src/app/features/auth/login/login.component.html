@@ -1,23 +1,73 @@
 <div
-    class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 px-4 py-12">
-    <div class="w-full max-w-md">
-        <!-- Logo and Header -->
-        <app-logo size="md" />
+    class="min-h-screen lg:h-screen lg:overflow-hidden flex flex-col lg:flex-row bg-white font-['Inter'] selection:bg-slate-900 selection:text-white">
 
-        <!-- Login Card -->
-        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-            <h2 class="text-2xl font-semibold text-gray-900 mb-6">Iniciar Sesión</h2>
-
-            <!-- Login Form Organism -->
-            <app-login-form (submitForm)="onLoginSubmit($event)" />
+    <!-- Left Side: Informational Grid / Branding (Hidden on mobile) -->
+    <div
+        class="hidden lg:flex lg:w-[42%] p-8 lg:p-12 flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100">
+        <div class="animate-enter" style="--index: 1">
+            <app-logo size="sm" />
         </div>
 
-        <!-- Additional Info -->
-        <p class="mt-8 text-center text-sm text-gray-600">
-            ¿Necesitas ayuda?
-            <a href="#" class="text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                Contacta soporte
-            </a>
-        </p>
+        <div class="max-w-md mt-12 lg:mt-[-2vh]">
+            <h1 class="text-[3rem] sm:text-[3.5rem] lg:text-[4.5rem] font-black leading-[0.85] tracking-tighter text-slate-900 mb-6 animate-enter uppercase"
+                style="--index: 2">
+                Flux<br />Medical
+            </h1>
+
+            <div class="space-y-4 animate-enter" style="--index: 3">
+                <p class="text-sm lg:text-base font-medium leading-tight text-slate-500 max-w-[32ch]">
+                    International Standard for
+                    <span class="text-slate-900">Clinical Management Systems</span>.
+                </p>
+
+                <!-- Swiss Technical Indicators -->
+                <div class="grid grid-cols-1 gap-2 pt-6 border-t border-slate-100 text-xs">
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-[10px] font-black tracking-widest uppercase text-slate-300">Protocol</span>
+                        <span class="text-sm font-bold text-slate-900">AES-256 / HIPAA Compliance</span>
+                    </div>
+                    <div class="flex justify-between items-baseline">
+                        <span class="text-[9px] font-black tracking-widest uppercase text-slate-300">Station</span>
+                        <span class="text-xs font-bold text-slate-900">Clinical Data Node v4.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden lg:block animate-enter" style="--index: 4">
+            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+                Engineered for precision.
+            </p>
+        </div>
     </div>
+
+    <div class="flex-1 p-8 lg:p-12 flex items-center justify-center bg-slate-50/50 min-h-screen lg:min-h-0">
+        <div class="w-full max-w-sm">
+            <!-- Mobile Logo (Only visible when branding panel is hidden) -->
+            <div class="lg:hidden mb-12 flex justify-center">
+                <app-logo size="md" />
+            </div>
+
+            <div class="mb-8 animate-enter" style="--index: 5">
+                <h2 class="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-600 mb-2">Auth / Login</h2>
+                <div class="h-[1px] w-8 bg-cyan-600 mb-4"></div>
+                <p class="text-xl font-bold tracking-tight text-slate-900">Validar Identidad</p>
+            </div>
+
+            <div class="animate-enter" style="--index: 6">
+                <app-login-form (submitForm)="onLoginSubmit($event)" />
+            </div>
+
+            <div class="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center opacity-30 group hover:opacity-100 transition-opacity duration-700 animate-enter"
+                style="--index: 7">
+                <span class="text-[9px] font-black uppercase tracking-widest">Global Access</span>
+                <div class="flex gap-1">
+                    <div class="w-1 h-1 bg-slate-900"></div>
+                    <div class="w-1 h-1 bg-slate-400"></div>
+                    <div class="w-1 h-1 bg-slate-200"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>

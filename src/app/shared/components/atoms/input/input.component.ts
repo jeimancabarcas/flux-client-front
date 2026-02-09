@@ -1,4 +1,4 @@
-import { Component, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 type InputType = 'text' | 'email' | 'password' | 'number' | 'tel';
@@ -60,12 +60,14 @@ export class InputComponent {
     focused = output<void>();
 
     protected showPassword = signal(false);
-    protected currentType = signal<string>('text');
 
-    constructor() {
-        // Initialize current type based on input type
-        this.currentType.set(this.type());
-    }
+    // Computed signal that returns the actual type based on showPassword state
+    protected currentType = computed(() => {
+        if (this.type() === 'password') {
+            return this.showPassword() ? 'text' : 'password';
+        }
+        return this.type();
+    });
 
     protected inputClasses(): string {
         const baseClasses = 'w-full px-4 py-3 rounded-lg transition-all duration-200 outline-none';
@@ -93,6 +95,5 @@ export class InputComponent {
 
     protected togglePasswordVisibility(): void {
         this.showPassword.update(v => !v);
-        this.currentType.set(this.showPassword() ? 'text' : 'password');
     }
 }

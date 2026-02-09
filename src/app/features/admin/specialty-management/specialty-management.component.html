@@ -1,0 +1,154 @@
+<div class="flex h-screen overflow-hidden bg-white font-['Inter'] selection:bg-black selection:text-white relative">
+
+    <app-sidebar [isOpen]="isSidebarOpen()" (toggle)="toggleSidebar()" />
+
+    <main class="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto bg-slate-50/30">
+        <!-- Top Navbar -->
+        <header
+            class="h-20 border-b border-slate-100 bg-white flex items-center justify-between px-6 lg:px-12 flex-shrink-0">
+            <div class="flex items-center gap-4">
+                <button (click)="toggleSidebar()"
+                    class="lg:hidden p-2 -ml-2 text-slate-900 border border-black hover:bg-black hover:text-white transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <h2 class="text-xs font-black uppercase tracking-[0.4em] text-cyan-600">Admin / Especialidades Médicas
+                </h2>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button (click)="openCreateModal()"
+                    class="bg-black text-white px-6 py-2 flex items-center gap-3 hover:bg-cyan-600 transition-all group shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+                    <span class="text-[10px] font-black uppercase tracking-widest">Nueva Especialidad</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <section class="p-6 lg:p-12 flex-1">
+            <div class="mb-12 animate-enter" style="--index: 1">
+                <h1
+                    class="text-[3rem] lg:text-[4rem] font-black leading-[0.85] tracking-tighter text-black uppercase mb-4">
+                    Catálogo Facultativo
+                </h1>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    Gestión estructural de ramas y especializaciones clínicas de la institución.
+                </p>
+            </div>
+
+            <!-- Swiss Data Table -->
+            <div class="border-[2px] border-black bg-white overflow-hidden animate-enter shadow-[10px_10px_0px_rgba(241,245,249,1)]"
+                style="--index: 2">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[600px]">
+                        <thead>
+                            <tr class="border-b-[2px] border-black bg-slate-50">
+                                <th
+                                    class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-100">
+                                    Nombre / Denominación</th>
+                                <th
+                                    class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400 border-r border-slate-100">
+                                    Descripción / Alcance</th>
+                                <th class="p-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (isLoading()) {
+                            <tr>
+                                <td colspan="3" class="p-20 text-center">
+                                    <span
+                                        class="text-[10px] font-black uppercase tracking-[0.5em] animate-pulse text-cyan-600">Sincronizando
+                                        Catálogo...</span>
+                                </td>
+                            </tr>
+                            } @else {
+                            @for (spec of specialties(); track spec.id) {
+                            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
+                                <td class="p-6 border-r border-slate-100">
+                                    <span class="text-sm font-black uppercase tracking-tight text-black">{{ spec.name
+                                        }}</span>
+                                </td>
+                                <td class="p-6 border-r border-slate-100">
+                                    <p
+                                        class="text-[11px] font-medium text-slate-500 uppercase leading-relaxed max-w-[60ch] line-clamp-2">
+                                        {{ spec.description || 'SIN DESCRIPCIÓN TÉCNICA REGISTRADA.' }}
+                                    </p>
+                                </td>
+                                <td class="p-6">
+                                    <div class="flex items-center gap-3">
+                                        <button (click)="openEditModal(spec)"
+                                            class="p-2 border border-slate-200 text-slate-400 hover:border-black hover:text-black transition-all">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 00-2 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                        </button>
+                                        <button (click)="openDeleteModal(spec)"
+                                            class="p-2 border border-slate-200 text-slate-400 hover:border-red-600 hover:text-red-600 transition-all">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            } @empty {
+                            <tr>
+                                <td colspan="3"
+                                    class="p-20 text-center text-[10px] font-black uppercase tracking-widest text-slate-300 italic">
+                                    No se detectaron especializaciones en el nodo central.
+                                </td>
+                            </tr>
+                            }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modales -->
+    <app-modal [isOpen]="isFormModalOpen()"
+        [title]="selectedSpecialty() ? 'Protocolo / Editar Denominación' : 'Protocolo / Registro de Rama'"
+        (close)="closeModals()">
+        <app-specialty-form [initialData]="selectedSpecialty()" [isLoading]="isProcessingAction()"
+            (submitForm)="handleSpecialtySubmit($event)" (cancel)="closeModals()" />
+    </app-modal>
+
+    <app-modal [isOpen]="isDeleteModalOpen()" title="Alerta / Revocación de Rama" (close)="closeModals()">
+        <div class="space-y-8">
+            <div class="space-y-4">
+                <div class="w-12 h-12 border-2 border-red-600 flex items-center justify-center text-red-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h4 class="text-xl font-black uppercase tracking-tighter text-black">Aviso de Estructura</h4>
+                <p class="text-xs font-medium text-slate-500 leading-relaxed uppercase tracking-widest">
+                    Está a punto de eliminar la rama facultativa de <span class="text-black font-black uppercase">{{
+                        selectedSpecialty()?.name }}</span>.
+                    Esta acción puede afectar la asignación de personal médico activo.
+                </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-slate-100">
+                <button (click)="confirmDelete()" [disabled]="isProcessingAction()"
+                    class="flex-1 bg-red-600 text-white p-5 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-black disabled:opacity-20 transition-all font-['Inter']">
+                    @if (isProcessingAction()) { REVOCANDO... } @else { CONFIRMAR ELIMINACIÓN }
+                </button>
+                <button (click)="closeModals()"
+                    class="px-8 border border-black p-5 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 transition-all font-['Inter']">
+                    CANCELAR
+                </button>
+            </div>
+        </div>
+    </app-modal>
+</div>

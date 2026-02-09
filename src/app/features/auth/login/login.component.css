@@ -1,2 +1,135 @@
-/* Additional custom styles if needed */
-/* Tailwind handles most styling, but you can add component-specific styles here */
+/* SWISS MINIMALISM - International Style Edition */
+
+:host {
+    display: block;
+}
+
+/* 1. Reset Global Interactions */
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 2. Entrance Sequence (Strict / Geometric) */
+@keyframes swissEnter {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-enter {
+    opacity: 0;
+    animation: swissEnter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: calc(var(--index) * 0.1s);
+}
+
+/* 3. Swiss Form Grid Styling */
+
+/* Remove standard styles from organisms */
+:host ::ng-deep .bg-white {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+}
+
+/* Deep Label Styling (Swiss Bold) */
+:host ::ng-deep label {
+    color: #1a202c !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    font-size: 10px !important;
+    letter-spacing: 0.15em !important;
+    margin-bottom: 8px !important;
+    display: flex !important;
+    align-items: center;
+}
+
+:host ::ng-deep label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #f1f5f9;
+    margin-left: 12px;
+}
+
+/* 4. Input Fields (Bauhaus/Swiss Precision) */
+:host ::ng-deep input {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 0 !important;
+    /* Square for Swiss style */
+    padding: 14px !important;
+    font-weight: 500 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease !important;
+}
+
+:host ::ng-deep input:focus {
+    outline: none !important;
+    border-color: #000000 !important;
+    background-color: #f8fafc !important;
+}
+
+/* Placeholder precision */
+:host ::ng-deep input::placeholder {
+    color: #cbd5e1 !important;
+    font-weight: 400 !important;
+}
+
+/* Error states (Clinical Red / High Visibility) */
+:host ::ng-deep input.has-error {
+    border-color: #ef4444 !important;
+}
+
+/* 5. The Swiss Button (The Core Action) */
+:host ::ng-deep app-button button {
+    background: #000000 !important;
+    /* Stark black for Swiss style */
+    color: #ffffff !important;
+    border-radius: 0 !important;
+    border: none !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.25em !important;
+    font-weight: 900 !important;
+    font-size: 10px !important;
+    padding: 18px !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: all 0.2s ease !important;
+}
+
+:host ::ng-deep app-button button:hover {
+    background: #0891b2 !important;
+    /* Clinical cyan only on hover */
+    letter-spacing: 0.35em !important;
+}
+
+/* Checkbox (Hard Geometric) */
+:host ::ng-deep input[type="checkbox"] {
+    border-radius: 0 !important;
+    accent-color: #000000;
+}
+
+/* 6. Mobile Refinements */
+@media (max-width: 1024px) {
+    .animate-enter {
+        animation-duration: 0.6s;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .animate-enter {
+        animation: none;
+        opacity: 1;
+    }
+}

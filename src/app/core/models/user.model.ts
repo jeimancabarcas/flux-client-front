@@ -1,3 +1,5 @@
+import { Specialty } from './specialty.model';
+
 export enum UserRole {
     ADMIN = 'ADMIN',
     MEDICO = 'MEDICO',
@@ -5,6 +7,7 @@ export enum UserRole {
 }
 
 export interface UserDetails {
+    id: string;
     cedula: string;
     nombre: string;
     apellido: string;
@@ -17,7 +20,9 @@ export interface User {
     id: string;
     email: string;
     role: UserRole;
-    detalles: UserDetails | null;
+    details: UserDetails | null; // Sincronizado con el backend (plural)
+    specialties: Specialty[];    // Nodo de especialidades asignadas
+    deletedAt: string | null;
 }
 
 export interface LoginRequest {
