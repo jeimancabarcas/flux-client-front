@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models/user.model';
@@ -26,10 +26,18 @@ export class DashboardComponent {
     protected readonly nextAppointments = signal<Appointment[]>([]);
     protected readonly activeConsultation = signal<Appointment | null>(null);
     protected readonly isLoadingAppointments = signal(false);
+    protected readonly selectedStatus = signal<AppointmentStatus | 'TODOS'>('TODOS');
     protected readonly errorMessage = signal<string | null>(null);
 
     // Expose UserRole enum to template
     protected readonly UserRole = UserRole;
+
+    protected readonly filteredAppointments = computed(() => {
+        const status = this.selectedStatus();
+        const appointments = this.nextAppointments();
+        if (status === 'TODOS') return appointments;
+        return appointments.filter(a => a.status === status);
+    });
 
     ngOnInit(): void {
         if (this.authService.userRole() === UserRole.MEDICO) {
@@ -48,19 +56,32 @@ export class DashboardComponent {
         });
     }
 
+    protected readonly sortOrder = signal<'ASC' | 'DESC'>('ASC');
+
     private loadNextAppointments(): void {
         this.isLoadingAppointments.set(true);
-        // Enviar la fecha y hora actual exacta para filtrar lo que queda del día
-        const now = new Date().toISOString();
-        this.appointmentService.getNextAppointments(now).subscribe({
+        // Generar inicio del día: 00:00:00.000 LOCAL convertido a ISO, como solicitaste
+        const startOfDay = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+
+        this.appointmentService.getNextAppointments(startOfDay, this.sortOrder()).subscribe({
+
             next: (res) => {
                 if (res.success && res.data) {
-                    this.nextAppointments.set(res.data);
+                    // Filtrar estrictamente por los estados solicitados: PENDIENTE, CONFIRMADA, COMPLETADA
+                    const filtered = res.data.filter(app =>
+                        [AppointmentStatus.PENDIENTE, AppointmentStatus.CONFIRMADA, AppointmentStatus.COMPLETADA].includes(app.status)
+                    );
+                    this.nextAppointments.set(filtered);
                 }
                 this.isLoadingAppointments.set(false);
             },
             error: () => this.isLoadingAppointments.set(false)
         });
+    }
+
+    protected toggleSortOrder(): void {
+        this.sortOrder.update(o => o === 'ASC' ? 'DESC' : 'ASC');
+        this.loadNextAppointments();
     }
 
     /**

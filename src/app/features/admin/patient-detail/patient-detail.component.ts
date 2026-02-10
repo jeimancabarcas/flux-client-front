@@ -40,6 +40,7 @@ export class PatientDetailComponent implements OnInit {
     protected readonly appointments = signal<Appointment[]>([]);
     protected readonly clinicalHistory = signal<ClinicalRecordRDA[]>([]);
     protected readonly billingHistory = signal<BillingRecord[]>([]);
+    protected readonly nextAppointment = signal<Appointment | null>(null);
     protected readonly isLoading = signal(true);
     protected readonly isSidebarOpen = signal(false);
 
@@ -103,7 +104,27 @@ export class PatientDetailComponent implements OnInit {
             ]);
         }
 
+        // Cargar Siguiente Cita
+        const today = new Date().toISOString().split('T')[0];
+        this.appointmentService.getNextAppointmentByPatientId(patientId, today).subscribe({
+            next: (res) => {
+                if (res.success) {
+                    this.nextAppointment.set(res.data);
+                }
+            }
+        });
+
         this.isLoading.set(false);
+    }
+
+    protected startAppointment(appointmentId: string): void {
+        this.appointmentService.startAppointment(appointmentId).subscribe({
+            next: (res) => {
+                if (res.success) {
+                    this.router.navigate(['/appointments', appointmentId, 'consultation']);
+                }
+            }
+        });
     }
 
     protected toggleSidebar(): void {

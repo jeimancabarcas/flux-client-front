@@ -31,15 +31,17 @@ export class SearchableSelectComponent implements ControlValueAccessor {
     readonly emptyMessage = input<string>('No se encontraron resultados');
     readonly value = input<string>(''); // Nuevo: para uso sin FormControl
     readonly compact = input<boolean>(false); // Nuevo: para versión reducida en filtros
+    readonly multiple = input<boolean>(false); // Nuevo: para selección múltiple
 
     // Outputs
     readonly searchChange = output<string>();
-    readonly selectionChange = output<string>(); // Nuevo: para emitir cambios en modo standalone
+    readonly selectionChange = output<string | string[]>(); // Actualizado: soporta array para multiselect
 
     // State
     protected readonly searchTerm = signal('');
     protected readonly isOpen = signal(false);
     protected readonly selectedValue = signal<string>('');
+    protected readonly selectedValues = signal<string[]>([]);
     protected readonly isDisabled = signal<boolean>(false);
 
     constructor() {
@@ -47,7 +49,11 @@ export class SearchableSelectComponent implements ControlValueAccessor {
         effect(() => {
             const externalValue = this.value();
             if (externalValue !== undefined) {
-                this.selectedValue.set(externalValue);
+                if (this.multiple()) {
+                    this.selectedValues.set(Array.isArray(externalValue) ? externalValue : [externalValue]);
+                } else {
+                    this.selectedValue.set(typeof externalValue === 'string' ? externalValue : '');
+                }
             }
         });
     }
@@ -64,6 +70,15 @@ export class SearchableSelectComponent implements ControlValueAccessor {
     });
 
     protected readonly selectedLabel = computed(() => {
+        if (this.multiple()) {
+            const count = this.selectedValues().length;
+            if (count === 0) return '';
+            if (count === 1) {
+                const selected = this.options().find(opt => opt.value === this.selectedValues()[0]);
+                return selected ? selected.label : `${count} seleccionados`;
+            }
+            return `${count} ítems seleccionados`;
+        }
         const selected = this.options().find(opt => opt.value === this.selectedValue());
         return selected ? selected.label : '';
     });
@@ -72,8 +87,12 @@ export class SearchableSelectComponent implements ControlValueAccessor {
     private onChange: (value: string) => void = () => { };
     private onTouched: () => void = () => { };
 
-    writeValue(value: string): void {
-        this.selectedValue.set(value || '');
+    writeValue(value: any): void {
+        if (this.multiple()) {
+            this.selectedValues.set(Array.isArray(value) ? value : []);
+        } else {
+            this.selectedValue.set(value || '');
+        }
     }
 
     registerOnChange(fn: (value: string) => void): void {
@@ -96,12 +115,33 @@ export class SearchableSelectComponent implements ControlValueAccessor {
     }
 
     protected selectOption(option: SearchableOption): void {
-        this.selectedValue.set(option.value);
-        this.onChange(option.value);
+        if (this.multiple()) {
+            const current = this.selectedValues();
+            const index = current.indexOf(option.value);
+            let next: string[];
+            if (index > -1) {
+                next = current.filter(v => v !== option.value);
+            } else {
+                next = [...current, option.value];
+            }
+            this.selectedValues.set(next);
+            this.onChange(next as any);
+            this.selectionChange.emit(next);
+        } else {
+            this.selectedValue.set(option.value);
+            this.onChange(option.value);
+            this.selectionChange.emit(option.value);
+            this.isOpen.set(false);
+            this.searchTerm.set('');
+        }
         this.onTouched();
-        this.selectionChange.emit(option.value); // Emitir para modo standalone
-        this.isOpen.set(false);
-        this.searchTerm.set('');
+    }
+
+    protected isSelected(value: string): boolean {
+        if (this.multiple()) {
+            return this.selectedValues().includes(value);
+        }
+        return this.selectedValue() === value;
     }
 
     protected toggleDropdown(): void {

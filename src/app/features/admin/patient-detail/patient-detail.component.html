@@ -48,7 +48,7 @@
             <!-- Hero Section: Identity -->
             <section class="animate-enter" style="--index: 1">
                 <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b-2 border-black pb-8">
-                    <div>
+                    <div class="flex-1">
                         <h1
                             class="text-[3.5rem] lg:text-[5rem] font-black leading-[0.85] tracking-tighter text-black uppercase mb-4">
                             {{ patient()?.nombres }}<br>
@@ -71,7 +71,58 @@
                             </div>
                         </div>
                     </div>
-                    <div class="lg:text-right space-y-2">
+
+                    @if (nextAppointment()) {
+                    <!-- Next Appointment Card -->
+                    <div class="w-full lg:w-72 bg-cyan-50 border-2 border-cyan-600 p-6 shadow-[8px_8px_0px_rgba(8,145,178,0.1)] flex flex-col gap-4 animate-enter"
+                        style="--index: 1.5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-cyan-600 flex items-center justify-center text-white">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-800">Próxima Cita
+                                </p>
+                                <p class="text-[11px] font-black uppercase text-cyan-600">{{
+                                    nextAppointment()?.startTime | date:'dd MMMM, HH:mm' }}</p>
+                            </div>
+                        </div>
+                        <div class="border-t border-cyan-200 pt-3">
+                            <p class="text-[9px] font-bold text-cyan-700 uppercase tracking-widest mb-1 italic">
+                                Especialista</p>
+                            <p class="text-xs font-black text-black uppercase truncate">DR. {{
+                                nextAppointment()?.doctor?.detalles?.nombre }}</p>
+                        </div>
+
+                        @if (authService.userRole() === UserRole.RECEPCIONISTA) {
+                        <button (click)="startAppointment(nextAppointment()!.id)"
+                            class="w-full bg-cyan-600 text-white p-3 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all active:scale-[0.98] shadow-md">
+                            INGRESAR
+                        </button>
+                        }
+                    </div>
+                    } @else {
+                    <!-- No Next Appointment Placeholder -->
+                    <div class="w-full lg:w-72 border-2 border-dashed border-slate-200 p-6 flex flex-col items-center justify-center gap-3 bg-white/50 animate-enter"
+                        style="--index: 1.5">
+                        <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Sin Citas</p>
+                            <p class="text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-1">Pendiente de
+                                Agenda</p>
+                        </div>
+                    </div>
+                    }
+
+                    <div class="lg:text-right space-y-2 lg:self-end">
                         <p class="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">Datos de Contacto</p>
                         <p class="text-sm font-black text-black">📞 {{ patient()?.telefono }}</p>
                         <p class="text-sm font-black text-black">✉️ {{ patient()?.email }}</p>

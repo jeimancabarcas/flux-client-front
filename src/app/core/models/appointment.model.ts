@@ -39,6 +39,7 @@ export interface Appointment {
     updatedAt: string;
     patient?: PatientInfo;
     doctor?: DoctorInfo;
+    itemIds?: string[]; // IDs del catálogo (CUPS/CUMS) para cargos pre-cargados
 }
 
 export type CalendarView = 'day' | 'week' | 'month';

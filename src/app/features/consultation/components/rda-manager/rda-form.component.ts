@@ -1,13 +1,16 @@
-import { Component, OnInit, signal, inject, input, output, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, signal, inject, input, output, ChangeDetectionStrategy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormArray } from '@angular/forms';
 import { ClinicalRecordRDA, RdaType } from '../../../../core/models/rda.model';
 import { CardComponent } from '../../../../shared/components/atoms/card/card.component';
+import { SearchableSelectComponent, SearchableOption } from '../../../../shared/components/atoms/searchable-select/searchable-select.component';
+import { CatalogItem } from '../../../../core/models/masters.model';
+import { MastersService } from '../../../../core/services/masters.service';
 
 @Component({
     selector: 'app-rda-form',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, CardComponent],
+    imports: [CommonModule, ReactiveFormsModule, CardComponent, SearchableSelectComponent],
     template: `
     <div class="space-y-12 pb-20">
         <form [formGroup]="rdaForm" class="space-y-12">
@@ -141,6 +144,57 @@ import { CardComponent } from '../../../../shared/components/atoms/card/card.com
                 </div>
             </app-card>
 
+            <!-- Section 5: Procedures & Charges (CUPS/CUMS) -->
+            <app-card customClass="p-10 space-y-8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <span class="text-xl font-black text-white bg-black px-3 py-1">05</span>
+                        <h4 class="text-xl font-black uppercase tracking-tighter">Procedimientos y Cargos (CUPS/CUMS)</h4>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-300">Vincular nuevos servicios o productos</label>
+                        <app-searchable-select 
+                            [options]="catalogOptions()" 
+                            [placeholder]="'BUSCAR EN EL CATÁLOGO INSTITUCIONAL...'"
+                            (selectionChange)="onSelectProcedure($any($event))"
+                            (searchChange)="searchCatalog($event)"
+                            [loading]="searchingCatalog()"
+                            [emptyMessage]="'NO SE ENCONTRARON COINCIDENCIAS'">
+                        </app-searchable-select>
+                    </div>
+
+                    <!-- Selected Procedures List -->
+                    <div class="space-y-4">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Procedimientos a Facturar ({{ procedures.length }})</label>
+                        <div class="flex flex-col gap-2">
+                            @for (proc of procedures.controls; track proc; let i = $index) {
+                                <div [formGroupName]="i" class="flex items-center justify-between p-4 bg-slate-50 border-2 border-black group/item animate-enter">
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[9px] font-black px-1.5 py-0.5 bg-black text-white italic tracking-widest">{{ proc.get('code')?.value }}</span>
+                                            <span class="text-sm font-black text-black uppercase">{{ proc.get('description')?.value }}</span>
+                                        </div>
+                                    </div>
+                                    <button type="button" (click)="removeProcedure(i)" class="p-2 text-slate-400 hover:text-red-600 transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            }
+                            @if (procedures.length === 0) {
+                                <div class="p-8 text-center border-2 border-dashed border-slate-200">
+                                    <p class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No hay procedimientos vinculados a esta atención</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </app-card>
+
             <div class="pt-10 flex justify-end">
                 <button type="submit" 
                     [disabled]="rdaForm.invalid"
@@ -169,13 +223,62 @@ export class RdaFormComponent implements OnInit {
     patientId = input.required<string>();
     appointmentId = input.required<string>();
     doctorId = input.required<string>();
+    initialItemIds = input<string[]>([]); // Items pre-cargados por recepción
 
     save = output<ClinicalRecordRDA>();
 
     protected rdaForm!: FormGroup;
 
+    private readonly mastersService = inject(MastersService);
+    protected readonly catalogItems = signal<CatalogItem[]>([]);
+    protected readonly searchingCatalog = signal(false);
+
+    protected readonly catalogOptions = computed<SearchableOption[]>(() =>
+        this.catalogItems()
+            .filter(i => i.isActive)
+            .map(i => ({
+                value: i.id,
+                label: i.name,
+                sublabel: `${i.code} | $${i.price.toLocaleString()}`
+            }))
+    );
+
     ngOnInit(): void {
         this.initForm();
+        this.loadInitialCatalog();
+    }
+
+    private loadInitialCatalog(): void {
+        this.mastersService.getCatalog().subscribe({
+            next: (res) => {
+                if (res.success) {
+                    this.catalogItems.set(res.data);
+                    // Pre-cargar los items iniciales si existen
+                    const preloadedIds = this.initialItemIds();
+                    if (preloadedIds && preloadedIds.length > 0) {
+                        res.data
+                            .filter(item => preloadedIds.includes(item.id))
+                            .forEach(item => this.addProcedureFromCatalog(item));
+                    }
+                }
+            }
+        });
+    }
+
+    protected searchCatalog(term: string): void {
+        if (!term || term.length < 2) return;
+        this.searchingCatalog.set(true);
+        this.mastersService.searchCatalog(term).subscribe({
+            next: (res) => {
+                if (res.success) {
+                    const current = this.catalogItems();
+                    const next = [...current, ...res.data.filter(ni => !current.find(ci => ci.id === ni.id))];
+                    this.catalogItems.set(next);
+                }
+                this.searchingCatalog.set(false);
+            },
+            error: () => this.searchingCatalog.set(false)
+        });
     }
 
     private initForm(): void {
@@ -205,6 +308,33 @@ export class RdaFormComponent implements OnInit {
 
     get diagnoses() {
         return this.rdaForm.get('diagnoses') as FormArray;
+    }
+
+    get procedures() {
+        return this.rdaForm.get('procedures') as FormArray;
+    }
+
+    onSelectProcedure(id: string): void {
+        const item = this.catalogItems().find(i => i.id === id);
+        if (item) {
+            this.addProcedureFromCatalog(item);
+        }
+    }
+
+    private addProcedureFromCatalog(item: CatalogItem): void {
+        // Evitar duplicados
+        const exists = this.procedures.value.some((p: any) => p.code === item.code);
+        if (exists) return;
+
+        const procGroup = this.fb.group({
+            code: [item.code, Validators.required],
+            description: [item.name, Validators.required]
+        });
+        this.procedures.push(procGroup);
+    }
+
+    removeProcedure(index: number): void {
+        this.procedures.removeAt(index);
     }
 
     addDiagnosis(): void {

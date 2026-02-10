@@ -132,21 +132,40 @@
             <!-- Panel de Próximas Citas (Solo Médicos) -->
             @if (authService.userRole() === UserRole.MEDICO) {
             <div class="mt-20 lg:mt-24 animate-enter" style="--index: 3">
-                <div class="flex items-center justify-between mb-10">
+                <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
                     <div class="flex flex-col gap-2">
                         <span class="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-600">Protocolo / Agenda
-                            Próxima</span>
-                        <h3 class="text-3xl font-black uppercase tracking-tighter text-black">Próximas Intervenciones
-                        </h3>
+                            del Día</span>
+                        <div class="flex items-center gap-4">
+                            <h3 class="text-3xl font-black uppercase tracking-tighter text-black caps">Citas del día de
+                                hoy</h3>
+                            <button (click)="toggleSortOrder()"
+                                class="flex items-center gap-1 px-3 py-1 bg-slate-100 hover:bg-black hover:text-white transition-all text-[9px] font-black uppercase tracking-widest border border-slate-200">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    @if (sortOrder() === 'ASC') {
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                                    } @else {
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 4h13M3 8h9m-9 4h6m4 0l4 4m0 0l4 4m-4-4v12"
+                                        style="transform: scaleY(-1); transform-origin: center;" />
+                                    }
+                                </svg>
+                                {{ sortOrder() === 'ASC' ? 'ORDEN CRONOLÓGICO' : 'ORDEN INVERSO' }}
+                            </button>
+                        </div>
                     </div>
-                    <button (click)="goToAppointments()"
-                        class="hidden sm:flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border-b-2 border-black pb-1 hover:text-cyan-600 hover:border-cyan-600 transition-all">
-                        Ver Calendario Completo
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                    </button>
+
+                    <!-- Filtros de Estado -->
+                    <div class="flex border-2 border-black p-1 bg-white">
+                        @for (status of ['TODOS', 'PENDIENTE', 'CONFIRMADA', 'COMPLETADA']; track status) {
+                        <button (click)="selectedStatus.set($any(status))"
+                            [class]="'px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ' + 
+                                (selectedStatus() === status ? 'bg-black text-white' : 'hover:bg-slate-50 text-slate-400')">
+                            {{ status }}
+                        </button>
+                        }
+                    </div>
                 </div>
 
                 @if (isLoadingAppointments()) {
@@ -155,20 +174,24 @@
                     <div class="h-48 bg-slate-50 border border-slate-100 animate-pulse"></div>
                     }
                 </div>
-                } @else if (nextAppointments().length === 0) {
+                } @else if (filteredAppointments().length === 0) {
                 <div
                     class="p-12 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
                     <svg class="w-12 h-12 text-slate-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <p class="text-xs font-black uppercase tracking-widest text-slate-400">Sin citas programadas para el
-                        ciclo actual</p>
+                    <p class="text-xs font-black uppercase tracking-widest text-slate-400">No hay citas registradas bajo
+                        este estado para hoy</p>
                 </div>
                 } @else {
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    @for (app of nextAppointments(); track app.id) {
-                    <app-card [interactive]="true" customClass="p-6 flex flex-col gap-6" (click)="goToAppointments()">
+                    @for (app of filteredAppointments(); track app.id) {
+                    <app-card [interactive]="true" [customClass]="'p-6 flex flex-col gap-6 border-t-4 ' + 
+                        (app.status === 'PENDIENTE' ? 'border-amber-400 bg-amber-50/10' : 
+                         app.status === 'CONFIRMADA' ? 'border-cyan-500 bg-cyan-50/10' : 
+                         'border-emerald-500 bg-emerald-50/10')" (click)="goToAppointments()">
+
                         <div class="flex justify-between items-start">
                             <div class="flex flex-col gap-1">
                                 <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Hora /
@@ -176,15 +199,18 @@
                                 <span class="text-xl font-black text-black tracking-tighter">{{
                                     formatTime(app.startTime) }}</span>
                             </div>
-                            <div class="px-3 py-1 bg-black text-white text-[9px] font-black uppercase tracking-widest">
-                                {{ getRelativeDay(app.startTime) }}
+                            <div [class]="'px-3 py-1 text-white text-[9px] font-black uppercase tracking-widest ' + 
+                                (app.status === 'PENDIENTE' ? 'bg-amber-400' : 
+                                 app.status === 'CONFIRMADA' ? 'bg-cyan-500' : 
+                                 'bg-emerald-500')">
+                                {{ app.status }}
                             </div>
                         </div>
 
                         <div class="space-y-4">
                             <div class="flex flex-col gap-1">
                                 <span
-                                    class="text-[10px] font-black uppercase tracking-widest text-cyan-600">Paciente</span>
+                                    class="text-[10px] font-black uppercase tracking-widest text-slate-400">Paciente</span>
                                 <span class="text-sm font-black text-black uppercase truncate">{{ app.patient?.nombres
                                     }} {{ app.patient?.apellidos }}</span>
                                 <span class="text-[10px] font-bold text-slate-400">ID: {{
@@ -192,15 +218,22 @@
                             </div>
 
                             <div class="pt-4 border-t border-slate-100 flex items-center justify-between gap-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                    <span class="text-[9px] font-black uppercase text-slate-500 tracking-wider">{{
-                                        app.status }}</span>
-                                </div>
+                                @if (app.status === 'CONFIRMADA') {
                                 <button (click)="startConsultation(app.id); $event.stopPropagation()"
-                                    class="flex-1 py-2 bg-black text-white text-[9px] font-black uppercase tracking-widest hover:bg-cyan-600 transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.1)]">
+                                    class="flex-1 py-3 bg-black text-white text-[9px] font-black uppercase tracking-widest hover:bg-cyan-600 transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none animate-pulse">
                                     Iniciar Consulta
                                 </button>
+                                } @else if (app.status === 'COMPLETADA') {
+                                <div
+                                    class="flex-1 py-2 bg-emerald-100 text-emerald-700 text-center text-[8px] font-black uppercase tracking-[0.2em] border border-emerald-200">
+                                    Atención Finalizada
+                                </div>
+                                } @else {
+                                <div
+                                    class="flex-1 py-2 bg-slate-100 text-slate-400 text-center text-[8px] font-black uppercase tracking-[0.2em] border border-slate-200 cursor-not-allowed">
+                                    Esperando Confirmación
+                                </div>
+                                }
                             </div>
                         </div>
                     </app-card>

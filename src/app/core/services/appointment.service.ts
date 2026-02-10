@@ -74,9 +74,17 @@ export class AppointmentService {
     /**
      * Obtener las próximas citas del médico autenticado
      */
-    getNextAppointments(date?: string): Observable<GenericApiResponse<Appointment[]>> {
-        const url = date ? `${this.apiUrl}/next?date=${date}` : `${this.apiUrl}/next`;
+    getNextAppointments(date?: string, order: 'ASC' | 'DESC' = 'DESC'): Observable<GenericApiResponse<Appointment[]>> {
+        let url = `${this.apiUrl}/next?order=${order}`;
+        if (date) url += `&date=${date}`;
         return this.http.get<GenericApiResponse<Appointment[]>>(url);
+    }
+
+    /**
+     * Obtener la siguiente cita de un paciente específico
+     */
+    getNextAppointmentByPatientId(patientId: string, date: string): Observable<GenericApiResponse<Appointment>> {
+        return this.http.get<GenericApiResponse<Appointment>>(`${this.apiUrl}/patient/${patientId}/next?date=${date}`);
     }
 
     /**

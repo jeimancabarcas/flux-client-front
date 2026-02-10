@@ -63,6 +63,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/masters-management/prepagada-management.component').then(m => m.PrepagadaManagementComponent)
     },
     {
+        path: 'admin/masters/catalog',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/admin/masters-management/catalog-management/catalog-management.component').then(m => m.CatalogManagementComponent)
+    },
+    {
         path: '**',
         redirectTo: 'login'
     }
