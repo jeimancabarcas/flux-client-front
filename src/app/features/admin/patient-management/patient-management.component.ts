@@ -8,6 +8,8 @@ import { ModalComponent } from '../../../shared/components/molecules/modal/modal
 import { TableComponent } from '../../../shared/components/organisms/table/table.component';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { MastersService } from '../../../core/services/masters.service';
+import { Eps, Prepagada } from '../../../core/models/masters.model';
 
 @Component({
     selector: 'app-patient-management',
@@ -21,6 +23,7 @@ export class PatientManagementComponent implements OnInit {
     protected readonly authService = inject(AuthService);
     private readonly fb = inject(FormBuilder);
     private readonly router = inject(Router);
+    private readonly mastersService = inject(MastersService);
 
     // State Signals
     protected readonly patients = signal<Patient[]>([]);
@@ -33,6 +36,10 @@ export class PatientManagementComponent implements OnInit {
     protected readonly totalPages = signal(1);
     protected readonly totalRecords = signal(0);
     protected readonly pageSize = 10;
+
+    // Master signals
+    protected readonly epsOptions = signal<Eps[]>([]);
+    protected readonly prepagadaOptions = signal<Prepagada[]>([]);
 
     // Form
     protected patientForm!: FormGroup;
@@ -53,6 +60,16 @@ export class PatientManagementComponent implements OnInit {
     ngOnInit(): void {
         this.initForm();
         this.loadPatients();
+        this.loadMasters();
+    }
+
+    private loadMasters(): void {
+        this.mastersService.getEpsList().subscribe(res => {
+            if (res.success) this.epsOptions.set(res.data.filter(i => i.isActive));
+        });
+        this.mastersService.getPrepagadaList().subscribe(res => {
+            if (res.success) this.prepagadaOptions.set(res.data.filter(i => i.isActive));
+        });
     }
 
     private initForm(): void {

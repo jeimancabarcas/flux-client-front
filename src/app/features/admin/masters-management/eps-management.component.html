@@ -1,0 +1,113 @@
+<div class="flex h-screen overflow-hidden bg-white font-['Inter'] selection:bg-black selection:text-white relative">
+    <app-sidebar [isOpen]="isSidebarOpen()" (toggle)="toggleSidebar()"></app-sidebar>
+
+    <main class="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto bg-slate-50/30">
+        <header
+            class="h-20 border-b border-slate-100 bg-white flex items-center justify-between px-6 lg:px-12 flex-shrink-0">
+            <div class="flex items-center gap-4">
+                <button (click)="toggleSidebar()"
+                    class="lg:hidden p-2 -ml-2 text-slate-900 border border-black hover:bg-black hover:text-white transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                <h2 class="text-xs font-black uppercase tracking-[0.4em] text-cyan-600">Configuración de Maestros</h2>
+            </div>
+            <button (click)="openCreateModal()"
+                class="bg-black text-white px-6 py-2 flex items-center gap-3 hover:bg-cyan-600 transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+                <span class="text-[10px] font-black uppercase tracking-widest">Nueva EPS</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+            </button>
+        </header>
+
+        <section class="p-6 lg:p-12 pb-0">
+            <div class="mb-12">
+                <h1
+                    class="text-[3rem] lg:text-[4rem] font-black leading-[0.85] tracking-tighter text-black uppercase mb-4">
+                    Directorios EPS
+                </h1>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    {{ epsList().length }} entidades registradas en el ecosistema prestacional.
+                </p>
+            </div>
+        </section>
+
+        <div class="px-8 flex-1">
+            <app-table [headers]="['Entidad', 'Estado', 'Acciones']" [data]="epsList()" [loading]="isLoading()"
+                emptyMessage="No hay entidades EPS configuradas.">
+
+                <ng-template #rowTemplate let-eps>
+                    <td class="p-6 border-r border-slate-100">
+                        <span class="text-xs font-black uppercase text-black italic">{{ eps.name }}</span>
+                    </td>
+                    <td class="p-6 border-r border-slate-100 text-center">
+                        <span class="px-2 py-1 text-[8px] font-black uppercase tracking-widest border"
+                            [class.bg-emerald-50]="eps.isActive" [class.text-emerald-700]="eps.isActive"
+                            [class.border-emerald-200]="eps.isActive" [class.bg-slate-50]="!eps.isActive"
+                            [class.text-slate-400]="!eps.isActive" [class.border-slate-200]="!eps.isActive">
+                            {{ eps.isActive ? 'ACTIVO' : 'INACTIVO' }}
+                        </span>
+                    </td>
+                    <td class="p-6">
+                        <div class="flex items-center gap-2">
+                            <button (click)="openEditModal(eps)"
+                                class="p-2 border border-slate-200 text-slate-400 hover:border-black hover:text-black transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                            <button (click)="openDeleteModal(eps)"
+                                class="p-2 border border-slate-200 text-slate-400 hover:border-red-600 hover:text-red-600 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </ng-template>
+            </app-table>
+        </div>
+    </main>
+
+    <!-- Modal: Formulario -->
+    <app-modal [isOpen]="isFormModalOpen()" (close)="closeModals()"
+        [title]="selectedEps() ? 'ACTUALIZAR ENTIDAD EPS' : 'REGISTRAR NUEVA EPS'">
+        <app-master-form [initialData]="selectedEps()" [isProcessing]="isProcessingAction()"
+            (submitted)="handleSubmit($event)">
+        </app-master-form>
+    </app-modal>
+
+    <!-- Modal: Confirmar Eliminación -->
+    <app-modal [isOpen]="isDeleteModalOpen()" (close)="closeModals()" title="ELIMINAR REGISTRO">
+        <div class="p-6 space-y-6 text-center">
+            <div class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <div class="space-y-2">
+                <h3 class="text-sm font-black uppercase tracking-widest text-black">¿Confirmar Eliminación?</h3>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                    Esta acción es irreversible. Se eliminará el convenio con <span class="text-black italic">{{
+                        selectedEps()?.name }}</span> del nodo central.
+                </p>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button (click)="confirmDelete()" [disabled]="isProcessingAction()"
+                    class="flex-1 bg-rose-600 text-white p-4 text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-[4px_4px_0px_rgba(225,29,72,0.1)]">
+                    SI, ELIMINAR
+                </button>
+                <button (click)="closeModals()"
+                    class="flex-1 border border-black p-4 text-[10px] font-black uppercase tracking-widest hover:bg-slate-50">
+                    CANCELAR
+                </button>
+            </div>
+        </div>
+    </app-modal>
+</div>

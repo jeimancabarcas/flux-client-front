@@ -254,17 +254,25 @@
                         <div class="space-y-2">
                             <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Entidad
                                 EPS</label>
-                            <input type="text" formControlName="eps"
-                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200"
-                                placeholder="EPS DEL PACIENTE" />
+                            <select formControlName="eps"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all appearance-none bg-white">
+                                <option value="">SELECCIONAR ENTIDAD...</option>
+                                @for (eps of epsOptions(); track eps.id) {
+                                <option [value]="eps.name">{{ eps.name }}</option>
+                                }
+                            </select>
                         </div>
                         <div class="space-y-2">
                             <label
                                 class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Medicina
                                 Prepagada / Seguro</label>
-                            <input type="text" formControlName="prepagada"
-                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200"
-                                placeholder="EMPRESA O PÓLIZA" />
+                            <select formControlName="prepagada"
+                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all appearance-none bg-white">
+                                <option value="">SELECCIONAR PLAN...</option>
+                                @for (p of prepagadaOptions(); track p.id) {
+                                <option [value]="p.name">{{ p.name }}</option>
+                                }
+                            </select>
                         </div>
                     </div>
                 </div>

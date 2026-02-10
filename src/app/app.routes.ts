@@ -53,6 +53,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/patient-detail/patient-detail.component').then(m => m.PatientDetailComponent)
     },
     {
+        path: 'admin/masters/eps',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/admin/masters-management/eps-management.component').then(m => m.EpsManagementComponent)
+    },
+    {
+        path: 'admin/masters/prepagada',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/admin/masters-management/prepagada-management.component').then(m => m.PrepagadaManagementComponent)
+    },
+    {
         path: '**',
         redirectTo: 'login'
     }
