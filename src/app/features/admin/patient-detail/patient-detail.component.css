@@ -1,0 +1,35 @@
+.animate-enter {
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Custom shadow for cards */
+.shadow-brutalist {
+    box-shadow: 6px 6px 0px rgba(0, 0, 0, 1);
+}
+
+.shadow-premium {
+    box-shadow: 10px 10px 0px rgba(241, 245, 249, 1);
+}
+
+/* Custom Scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

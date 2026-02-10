@@ -9,6 +9,8 @@ export interface Patient {
     email: string;
     telefono: string;
     direccion: string;
+    eps?: string;
+    prepagada?: string;
     habeasDataConsent: boolean;
     createdAt: string;
     updatedAt: string;

@@ -48,6 +48,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/patient-management/patient-management.component').then(m => m.PatientManagementComponent)
     },
     {
+        path: 'admin/patients/:id',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/admin/patient-detail/patient-detail.component').then(m => m.PatientDetailComponent)
+    },
+    {
         path: '**',
         redirectTo: 'login'
     }

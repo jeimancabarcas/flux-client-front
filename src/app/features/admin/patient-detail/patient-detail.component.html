@@ -1,0 +1,330 @@
+<div class="flex h-screen overflow-hidden bg-white font-['Inter'] selection:bg-black selection:text-white relative">
+    <!-- Sidebar -->
+    <app-sidebar [isOpen]="isSidebarOpen()" (toggle)="toggleSidebar()"></app-sidebar>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto bg-slate-50/30">
+        <!-- Header -->
+        <header
+            class="h-20 border-b border-slate-100 bg-white flex items-center justify-between px-6 lg:px-12 flex-shrink-0 sticky top-0 z-40">
+            <div class="flex items-center gap-4">
+                <button (click)="goBack()"
+                    class="p-2 border border-black hover:bg-black hover:text-white transition-all group">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                </button>
+                <div class="flex flex-col">
+                    <h2 class="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-600 leading-none">Visor de
+                        Paciente</h2>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Nodo de Información
+                        Centralizado</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6">
+                @if (patient()) {
+                <div class="hidden md:flex flex-col items-end">
+                    <span class="text-[10px] font-black uppercase text-black italic">Ref: {{ patient()?.id?.slice(0,8)
+                        }}</span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sincronizado</span>
+                </div>
+                }
+            </div>
+        </header>
+
+        @if (isLoading()) {
+        <div class="flex-1 flex items-center justify-center">
+            <div class="flex flex-col items-center gap-4">
+                <div class="w-12 h-12 border-4 border-slate-100 border-t-black rounded-full animate-spin"></div>
+                <span class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Accediendo al
+                    registro...</span>
+            </div>
+        </div>
+        } @else if (patient()) {
+        <div class="p-6 lg:p-12 space-y-12 max-w-7xl mx-auto w-full">
+
+            <!-- Hero Section: Identity -->
+            <section class="animate-enter" style="--index: 1">
+                <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b-2 border-black pb-8">
+                    <div>
+                        <h1
+                            class="text-[3.5rem] lg:text-[5rem] font-black leading-[0.85] tracking-tighter text-black uppercase mb-4">
+                            {{ patient()?.nombres }}<br>
+                            {{ patient()?.apellidos }}
+                        </h1>
+                        <div class="flex flex-wrap gap-4">
+                            <div class="bg-black text-white px-4 py-2 flex flex-col">
+                                <span class="text-[8px] font-bold uppercase tracking-widest opacity-60">ID / {{
+                                    patient()?.tipoIdentificacion }}</span>
+                                <span class="text-xs font-black uppercase">{{ patient()?.numeroIdentificacion }}</span>
+                            </div>
+                            <div class="border border-black px-4 py-2 flex flex-col bg-white">
+                                <span
+                                    class="text-[8px] font-black uppercase tracking-widest text-slate-400">Género</span>
+                                <span class="text-xs font-black uppercase text-black">{{ patient()?.genero }}</span>
+                            </div>
+                            <div class="border border-black px-4 py-2 flex flex-col bg-white">
+                                <span class="text-[8px] font-black uppercase tracking-widest text-slate-400">Edad</span>
+                                <span class="text-xs font-black uppercase text-black">32 Años</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lg:text-right space-y-2">
+                        <p class="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">Datos de Contacto</p>
+                        <p class="text-sm font-black text-black">📞 {{ patient()?.telefono }}</p>
+                        <p class="text-sm font-black text-black">✉️ {{ patient()?.email }}</p>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase italic">{{ patient()?.direccion }}</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Information Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+                <!-- Left Column: Admin & Social -->
+                <div class="space-y-12">
+
+                    <!-- EPS / Insurance Section -->
+                    <section class="animate-enter" style="--index: 2">
+                        <div class="flex items-center gap-4 mb-6">
+                            <span class="text-[11px] font-black uppercase tracking-[0.4em] text-cyan-600">Aseguramiento
+                                y EPS</span>
+                            <div class="h-[1px] flex-1 bg-slate-200"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-6 bg-white border border-slate-200 shadow-[4px_4px_0px_rgba(0,0,0,0.05)]">
+                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Entidad
+                                    EPS</p>
+                                <p class="text-sm font-black text-black uppercase">{{ patient()?.eps || 'NO
+                                    ESPECIFICADO' }}</p>
+                            </div>
+                            <div class="p-6 bg-white border border-slate-200 shadow-[4px_4px_0px_rgba(0,0,0,0.05)]">
+                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Medicina
+                                    Prepagada</p>
+                                <p class="text-sm font-black text-black uppercase">{{ patient()?.prepagada || 'NO POSEE'
+                                    }}</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Appointments History -->
+                    <section class="animate-enter" style="--index: 3">
+                        <div class="flex items-center gap-4 mb-6">
+                            <span class="text-[11px] font-black uppercase tracking-[0.4em] text-cyan-600">Historial de
+                                Citas</span>
+                            <div class="h-[1px] flex-1 bg-slate-200"></div>
+                        </div>
+                        <div class="overflow-hidden border border-black bg-white">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50 border-b border-black">
+                                    <tr>
+                                        <th class="px-4 py-3 text-[9px] font-black uppercase tracking-widest">Fecha</th>
+                                        <th class="px-4 py-3 text-[9px] font-black uppercase tracking-widest">
+                                            Especialista</th>
+                                        <th class="px-4 py-3 text-[9px] font-black uppercase tracking-widest">Estado
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @for (app of appointments(); track app.id) {
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-4 py-4 text-[10px] font-bold text-black uppercase">{{
+                                            app.startTime | date:'dd/MM/yyyy HH:mm' }}</td>
+                                        <td class="px-4 py-4 text-[10px] font-bold text-slate-600 uppercase">DR. {{
+                                            app.doctor?.detalles?.nombre }}</td>
+                                        <td class="px-4 py-4">
+                                            <span
+                                                class="px-2 py-0.5 border text-[8px] font-black uppercase tracking-tighter"
+                                                [class]="getStatusClasses(app.status)">
+                                                {{ app.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    } @empty {
+                                    <tr>
+                                        <td colspan="3"
+                                            class="px-4 py-8 text-center text-[10px] font-bold text-slate-400 uppercase italic">
+                                            Sin registros previos.</td>
+                                    </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Billing History (Receptionist/Admin Only) -->
+                    @if (authService.userRole() !== UserRole.MEDICO) {
+                    <section class="animate-enter" style="--index: 4">
+                        <div class="flex items-center gap-4 mb-6">
+                            <span class="text-[11px] font-black uppercase tracking-[0.4em] text-rose-600">Historial
+                                Financiero</span>
+                            <div class="h-[1px] flex-1 bg-slate-200"></div>
+                        </div>
+                        <div class="overflow-hidden border border-black bg-white">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-rose-50/30 border-b border-black">
+                                    <tr>
+                                        <th
+                                            class="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-rose-800">
+                                            Referencia</th>
+                                        <th
+                                            class="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-rose-800">
+                                            Monto</th>
+                                        <th
+                                            class="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-rose-800">
+                                            Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @for (bill of billingHistory(); track bill.id) {
+                                    <tr class="hover:bg-rose-50/10 transition-colors">
+                                        <td class="px-4 py-4">
+                                            <div class="flex flex-col">
+                                                <span class="text-[10px] font-black text-black">{{ bill.id }}</span>
+                                                <span
+                                                    class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{{
+                                                    bill.date }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-4 text-[11px] font-black text-black font-mono">
+                                            ${{ bill.amount | number:'1.0-0' }}
+                                        </td>
+                                        <td class="px-4 py-4">
+                                            <span
+                                                class="px-2 py-0.5 border text-[8px] font-black uppercase tracking-tighter"
+                                                [class]="getStatusClasses(bill.status)">
+                                                {{ bill.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    } @empty {
+                                    <tr>
+                                        <td colspan="3"
+                                            class="px-4 py-8 text-center text-[10px] font-bold text-slate-400 uppercase italic">
+                                            Sin facturas registradas.</td>
+                                    </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                    }
+                </div>
+
+                <!-- Right Column: Clinical (Doctor Focused) -->
+                <div class="space-y-12">
+
+                    @if (authService.userRole() === UserRole.MEDICO) {
+                    <!-- Clinical Records (Local) -->
+                    <section class="animate-enter" style="--index: 5">
+                        <div class="flex items-center gap-4 mb-6">
+                            <span class="text-[11px] font-black uppercase tracking-[0.4em] text-cyan-600">Historial
+                                Clínico Nodo Central</span>
+                            <div class="h-[1px] flex-1 bg-slate-200"></div>
+                        </div>
+                        <div class="space-y-4">
+                            @for (record of clinicalHistory(); track record.id) {
+                            <div
+                                class="p-6 bg-white border-l-4 border-black border-y border-r border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex flex-col">
+                                        <span class="text-[10px] font-black text-black italic uppercase">Consulta
+                                            Externa</span>
+                                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{{
+                                            record.createdAt | date:'dd MMMM, yyyy' }}</span>
+                                    </div>
+                                    <span
+                                        class="text-[8px] font-black bg-slate-100 px-2 py-1 uppercase tracking-widest">DR.
+                                        {{ record.doctorId.slice(0,5) }}</span>
+                                </div>
+                                <div class="space-y-2">
+                                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-tight">Motivo:
+                                    </p>
+                                    <p
+                                        class="text-xs font-bold text-black leading-relaxed italic border-l border-slate-100 pl-4">
+                                        "{{ record.reasonForConsultation }}"</p>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-slate-50 flex gap-4">
+                                    @for (diag of record.diagnoses; track diag.code) {
+                                    <span
+                                        class="text-[8px] font-black bg-cyan-50 text-cyan-700 px-2 py-1 border border-cyan-100 uppercase">
+                                        {{ diag.code }} / {{ diag.description }}
+                                    </span>
+                                    }
+                                </div>
+                            </div>
+                            } @empty {
+                            <div class="p-12 border-2 border-dashed border-slate-200 text-center">
+                                <p class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Cero
+                                    Antecedentes en Local</p>
+                            </div>
+                            }
+                        </div>
+                    </section>
+
+                    <!-- Interoperability clinical history -->
+                    <section class="animate-enter" style="--index: 6">
+                        <div class="flex items-center gap-4 mb-6">
+                            <span
+                                class="text-[11px] font-black uppercase tracking-[0.4em] text-indigo-600">Interoperabilidad
+                                (Historia Unificada)</span>
+                            <div class="h-[1px] flex-1 bg-slate-200"></div>
+                        </div>
+                        <div
+                            class="bg-indigo-50/30 border border-indigo-100 p-6 italic relative overflow-hidden group hover:border-black transition-all">
+                            <div
+                                class="absolute -right-8 -top-8 text-indigo-100 rotate-12 group-hover:text-slate-100 transition-colors">
+                                <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                                </svg>
+                            </div>
+                            <div class="relative z-10">
+                                <h4 class="text-xs font-black uppercase text-indigo-900 mb-2">Accediendo a RIPS / Nodo
+                                    Nacional</h4>
+                                <p class="text-[10px] font-medium text-indigo-700 leading-relaxed mb-4">
+                                    No se han detectado registros externos recientes para este paciente en otros centros
+                                    de salud integrados al ecosistema nacional.
+                                </p>
+                                <button
+                                    class="bg-white border border-indigo-600 px-4 py-2 text-[8px] font-black uppercase tracking-widest text-indigo-600 hover:bg-black hover:text-white transition-all">
+                                    Sincronizar Nodo Nacional
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                    } @else {
+                    <!-- Restricted Clinical Access Placeholder -->
+                    <div
+                        class="h-full flex flex-col items-center justify-center p-12 border-2 border-dashed border-slate-200 bg-slate-50/30 text-center opacity-60">
+                        <div
+                            class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-6 text-slate-300">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xs font-black uppercase tracking-[0.4em] text-slate-400 mb-2">Información Médica
+                            Restringida</h3>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest max-w-[280px]">El
+                            acceso a la historia clínica está limitado exclusivamente al personal facultativo
+                            autorizado.</p>
+                    </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Footer / Consent -->
+            <footer
+                class="pt-12 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 opacity-40 grayscale hover:grayscale-0 transition-all">
+                <p class="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400">Consentimiento Habeas Data
+                    Activo / Sincronizado</p>
+                <p class="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Flux Medical /
+                    Protocolo de Auditoría Activo</p>
+            </footer>
+        </div>
+        }
+    </main>
+</div>

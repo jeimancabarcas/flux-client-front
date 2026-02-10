@@ -7,6 +7,7 @@ import { SidebarComponent } from '../../../shared/components/organisms/sidebar/s
 import { ModalComponent } from '../../../shared/components/molecules/modal/modal.component';
 import { TableComponent } from '../../../shared/components/organisms/table/table.component';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 
 @Component({
     selector: 'app-patient-management',
@@ -19,6 +20,7 @@ export class PatientManagementComponent implements OnInit {
     private readonly patientService = inject(PatientService);
     protected readonly authService = inject(AuthService);
     private readonly fb = inject(FormBuilder);
+    private readonly router = inject(Router);
 
     // State Signals
     protected readonly patients = signal<Patient[]>([]);
@@ -64,6 +66,8 @@ export class PatientManagementComponent implements OnInit {
             email: ['', [Validators.required, Validators.email]],
             telefono: ['', Validators.required],
             direccion: ['', Validators.required],
+            eps: [''],
+            prepagada: [''],
             habeasDataConsent: [false, Validators.requiredTrue]
         });
     }
@@ -123,6 +127,8 @@ export class PatientManagementComponent implements OnInit {
             email: patient.email,
             telefono: patient.telefono,
             direccion: patient.direccion,
+            eps: patient.eps || '',
+            prepagada: patient.prepagada || '',
             habeasDataConsent: patient.habeasDataConsent
         });
         this.isFormModalOpen.set(true);
@@ -163,6 +169,10 @@ export class PatientManagementComponent implements OnInit {
             },
             error: () => this.isLoading.set(false)
         });
+    }
+
+    protected viewPatientDetail(id: string): void {
+        this.router.navigate(['/admin/patients', id]);
     }
 
     protected toggleSidebar(): void {
