@@ -23,7 +23,7 @@ export class PatientManagementComponent implements OnInit {
     // State Signals
     protected readonly patients = signal<Patient[]>([]);
     protected readonly isLoading = signal(false);
-    protected readonly isSidebarOpen = signal(true);
+    protected readonly isSidebarOpen = signal(false);
     protected readonly isFormModalOpen = signal(false);
     protected readonly selectedPatient = signal<Patient | null>(null);
     protected readonly searchTerm = signal('');

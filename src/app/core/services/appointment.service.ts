@@ -13,6 +13,13 @@ export class AppointmentService {
     private readonly apiUrl = `${environment.apiUrl}/appointments`;
 
     /**
+     * Obtener una cita específica por su ID
+     */
+    getAppointmentById(id: string): Observable<GenericApiResponse<Appointment>> {
+        return this.http.get<GenericApiResponse<Appointment>>(`${this.apiUrl}/${id}`);
+    }
+
+    /**
      * Obtener citas filtradas por rango de fechas
      */
     getAppointments(start: string, end: string): Observable<GenericApiResponse<Appointment[]>> {
@@ -27,6 +34,27 @@ export class AppointmentService {
     }
 
     /**
+     * Finalizar formalmente la consulta de una cita
+     */
+    completeAppointment(id: string, notes?: string): Observable<GenericApiResponse<Appointment>> {
+        return this.http.patch<GenericApiResponse<Appointment>>(`${this.apiUrl}/${id}/complete`, { notes });
+    }
+
+    /**
+     * Obtener la consulta actualmente en curso para el médico autenticado
+     */
+    getActiveConsultation(): Observable<GenericApiResponse<Appointment>> {
+        return this.http.get<GenericApiResponse<Appointment>>(`${this.apiUrl}/active-consultation`);
+    }
+
+    /**
+     * Iniciar formalmente la consulta de una cita
+     */
+    startAppointment(id: string): Observable<GenericApiResponse<Appointment>> {
+        return this.http.patch<GenericApiResponse<Appointment>>(`${this.apiUrl}/${id}/start`, {});
+    }
+
+    /**
      * Actualizar una cita existente
      */
     updateAppointment(id: string, appointment: Partial<Appointment>): Observable<GenericApiResponse<Appointment>> {
@@ -34,7 +62,32 @@ export class AppointmentService {
     }
 
     /**
-     * Eliminar/Cancelar una cita
+     * Reprogramar una cita existente (solo fecha/hora y duración)
+     */
+    rescheduleAppointment(id: string, startTime: string, durationMinutes: number): Observable<GenericApiResponse<Appointment>> {
+        return this.http.patch<GenericApiResponse<Appointment>>(`${this.apiUrl}/${id}/reschedule`, {
+            startTime,
+            durationMinutes
+        });
+    }
+
+    /**
+     * Obtener las próximas citas del médico autenticado
+     */
+    getNextAppointments(date?: string): Observable<GenericApiResponse<Appointment[]>> {
+        const url = date ? `${this.apiUrl}/next?date=${date}` : `${this.apiUrl}/next`;
+        return this.http.get<GenericApiResponse<Appointment[]>>(url);
+    }
+
+    /**
+     * Cancelar formalmente una cita con una razón específica
+     */
+    cancelAppointment(id: string, reason: string): Observable<GenericApiResponse<void>> {
+        return this.http.patch<GenericApiResponse<void>>(`${this.apiUrl}/${id}/cancel`, { reason });
+    }
+
+    /**
+     * Eliminar físicamente una cita
      */
     deleteAppointment(id: string): Observable<GenericApiResponse<void>> {
         return this.http.delete<GenericApiResponse<void>>(`${this.apiUrl}/${id}`);

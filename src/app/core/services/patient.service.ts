@@ -24,7 +24,7 @@ export class PatientService {
     private readonly http = inject(HttpClient);
     private readonly apiUrl = `${environment.apiUrl}/patients`;
 
-    getPatients(page: number = 1, limit: number = 10, search: string = ''): Observable<GenericApiResponse<PaginatedPatients>> {
+    getPatients(page: number = 1, limit: number = 5, search: string = ''): Observable<GenericApiResponse<PaginatedPatients>> {
         const params: Record<string, string> = {
             page: page.toString(),
             limit: limit.toString()
@@ -36,7 +36,7 @@ export class PatientService {
     }
 
     searchPatients(search: string): Observable<GenericApiResponse<PaginatedPatients>> {
-        return this.getPatients(1, 50, search);
+        return this.getPatients(1, 5, search);
     }
 
     /**

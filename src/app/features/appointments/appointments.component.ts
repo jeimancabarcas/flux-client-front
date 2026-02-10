@@ -6,17 +6,18 @@ import { PatientService } from '../../core/services/patient.service';
 import { UserService } from '../../core/services/user.service';
 import { Appointment, CalendarView, AppointmentStatus } from '../../core/models/appointment.model';
 import { Patient } from '../../core/models/patient.model';
-import { User } from '../../core/models/user.model';
+import { User, UserRole } from '../../core/models/user.model';
 import { SidebarComponent } from '../../shared/components/organisms/sidebar/sidebar.component';
 import { ModalComponent } from '../../shared/components/molecules/modal/modal.component';
 import { SearchableSelectComponent, SearchableOption } from '../../shared/components/atoms/searchable-select/searchable-select.component';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DateSelectorComponent } from '../../shared/components/molecules/date-selector/date-selector.component';
+import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { HostListener } from '@angular/core';
 
 @Component({
     selector: 'app-appointments',
-    imports: [CommonModule, SidebarComponent, ModalComponent, ReactiveFormsModule, SearchableSelectComponent],
+    imports: [CommonModule, SidebarComponent, ModalComponent, ReactiveFormsModule, FormsModule, SearchableSelectComponent, DateSelectorComponent],
     templateUrl: './appointments.component.html',
     styleUrl: './appointments.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -34,9 +35,25 @@ export class AppointmentsComponent implements OnInit {
     protected readonly appointments = signal<Appointment[]>([]);
     protected readonly isLoading = signal(false);
     protected readonly isSidebarOpen = signal(false);
+    protected readonly isRescheduleMode = signal(false);
+    protected readonly cancellingId = signal<string | null>(null);
+    protected readonly cancelReason = signal('');
+    protected readonly todayDate = signal(new Date());
+    protected readonly statusFilter = signal<AppointmentStatus | 'TODOS'>('TODOS');
+    protected readonly doctorFilter = signal<string>('TODOS');
+    protected readonly patientFilter = signal<string>('TODOS');
 
     // Enums for template
     protected readonly AppointmentStatus = AppointmentStatus;
+    protected readonly UserRole = UserRole;
+    protected readonly availableStatuses: (AppointmentStatus | 'TODOS')[] = [
+        'TODOS',
+        AppointmentStatus.PENDIENTE,
+        AppointmentStatus.CONFIRMADA,
+        AppointmentStatus.EN_CONSULTA,
+        AppointmentStatus.COMPLETADA,
+        AppointmentStatus.CANCELADA
+    ];
 
     // Modal State
     protected readonly isFormModalOpen = signal(false);
@@ -75,6 +92,30 @@ export class AppointmentsComponent implements OnInit {
         })
     );
 
+    protected readonly displayAppointments = computed(() => {
+        let filtered = this.appointments();
+
+        // 1. Filtro por Estado
+        const sFilter = this.statusFilter();
+        if (sFilter !== 'TODOS') {
+            filtered = filtered.filter(a => a.status === sFilter);
+        }
+
+        // 2. Filtro por Médico (Solo aplica para Recepcionista/Admin)
+        const dFilter = this.doctorFilter();
+        if (dFilter && dFilter !== 'TODOS') {
+            filtered = filtered.filter(a => a.doctorId === dFilter);
+        }
+
+        // 3. Filtro por Paciente
+        const pFilter = this.patientFilter();
+        if (pFilter && pFilter !== 'TODOS') {
+            filtered = filtered.filter(a => a.patientId === pFilter);
+        }
+
+        return filtered;
+    });
+
     // Constants
     protected readonly daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     protected readonly hours = Array.from({ length: 24 }, (_, i) => i);
@@ -87,20 +128,35 @@ export class AppointmentsComponent implements OnInit {
     ngOnInit(): void {
         this.loadAppointments();
         this.loadInitialPatients();
-        this.loadDoctors();
+        if (this.authService.userRole() !== UserRole.MEDICO) {
+            this.loadDoctors();
+        }
     }
 
     private initForm(): void {
         this.appointmentForm = this.fb.group({
             patientId: ['', Validators.required],
             doctorId: ['', Validators.required],
-            startTime: ['', Validators.required],
-            horaInicio: ['', Validators.required],
+            schedule: ['', Validators.required], // Objeto { date, time }
             duracion: [30, [Validators.required, Validators.min(15)]],
             reason: ['', Validators.required],
             status: [AppointmentStatus.PENDIENTE]
-        });
+        }, { validators: this.futureDateValidator });
     }
+
+    /**
+     * Validador para asegurar que la cita no sea en el pasado
+     */
+    private futureDateValidator: any = (group: FormGroup) => {
+        const schedule = group.get('schedule')?.value;
+
+        if (!schedule || !schedule.date || !schedule.time) return { incomplete: true };
+
+        const appointmentDate = new Date(`${schedule.date}T${schedule.time}:00`);
+        const now = new Date();
+
+        return appointmentDate < now ? { pastDate: true } : null;
+    };
 
     // Computed data for the calendar grid
     protected readonly daysInView = computed(() => {
@@ -220,30 +276,39 @@ export class AppointmentsComponent implements OnInit {
         return status === AppointmentStatus.PENDIENTE || status === AppointmentStatus.CONFIRMADA;
     }
 
-    protected openEditModal(app: Appointment, event: MouseEvent): void {
+    protected openRescheduleModal(app: Appointment, event: MouseEvent): void {
         event.stopPropagation();
         this.activeTooltipId.set(null);
         this.selectedAppointment.set(app);
+        this.isRescheduleMode.set(true);
 
         const start = new Date(app.startTime);
+        const dateStr = start.toISOString().split('T')[0];
+        const timeStr = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`;
+
         this.appointmentForm.patchValue({
             patientId: app.patientId,
             doctorId: app.doctorId,
-            startTime: start.toISOString().split('T')[0],
-            horaInicio: `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`,
+            schedule: { date: dateStr, time: timeStr },
             duracion: this.getDuration(app),
             reason: app.reason,
             status: app.status
         });
+
+        // Deshabilitar campos que no se pueden modificar en reprogramación
+        this.appointmentForm.get('patientId')?.disable();
+        this.appointmentForm.get('doctorId')?.disable();
+        this.appointmentForm.get('reason')?.disable();
+        this.appointmentForm.get('status')?.disable();
+
         this.isFormModalOpen.set(true);
     }
 
-    protected deleteAppointment(appId: string, event: MouseEvent): void {
-        event.stopPropagation();
-        if (!confirm('¿Está seguro de eliminar esta cita permanentemente?')) return;
 
+    protected startConsultation(appId: string, event: MouseEvent): void {
+        event.stopPropagation();
         this.isLoading.set(true);
-        this.appointmentService.deleteAppointment(appId).subscribe({
+        this.appointmentService.startAppointment(appId).subscribe({
             next: (res) => {
                 if (res.success) {
                     this.loadAppointments();
@@ -255,9 +320,41 @@ export class AppointmentsComponent implements OnInit {
         });
     }
 
+    protected openCancel(appId: string, event: MouseEvent): void {
+        event.stopPropagation();
+        this.cancellingId.set(appId);
+        this.cancelReason.set('');
+    }
+
+    protected closeCancel(event?: MouseEvent): void {
+        event?.stopPropagation();
+        this.cancellingId.set(null);
+        this.cancelReason.set('');
+    }
+
+    protected onCancelAppointment(appId: string, event: MouseEvent): void {
+        event.stopPropagation();
+        const reason = this.cancelReason().trim();
+
+        if (!reason) return;
+
+        this.isLoading.set(true);
+        this.appointmentService.cancelAppointment(appId, reason).subscribe({
+            next: (res) => {
+                if (res.success) {
+                    this.loadAppointments();
+                    this.activeTooltipId.set(null);
+                    this.cancellingId.set(null);
+                }
+                this.isLoading.set(false);
+            },
+            error: () => this.isLoading.set(false)
+        });
+    }
+
     // Patient Management
     private loadInitialPatients(): void {
-        this.patientService.getPatients(1, 50).subscribe({
+        this.patientService.getPatients(1, 5).subscribe({
             next: (res) => {
                 if (res.success) {
                     this.patients.set(res.data.data);
@@ -307,12 +404,29 @@ export class AppointmentsComponent implements OnInit {
 
     protected openCreateModal(date?: Date, hour?: number): void {
         this.selectedAppointment.set(null);
-        this.appointmentForm.reset({
-            startTime: date?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
-            horaInicio: hour !== undefined ? `${hour.toString().padStart(2, '0')}:00` : '08:00',
+        this.isRescheduleMode.set(false);
+
+        // Habilitar todos los campos para nueva cita
+        this.appointmentForm.get('patientId')?.enable();
+        this.appointmentForm.get('doctorId')?.enable();
+        this.appointmentForm.get('reason')?.enable();
+        this.appointmentForm.get('status')?.enable();
+
+        const dateStr = date?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0];
+        const timeStr = hour !== undefined ? `${hour.toString().padStart(2, '0')}:00` : '08:00';
+
+        const initialValues: any = {
+            schedule: { date: dateStr, time: timeStr },
             duracion: 30,
             status: AppointmentStatus.PENDIENTE
-        });
+        };
+
+        // Si es médico, auto-asignar su ID y deshabilitar el campo
+        if (this.authService.userRole() === this.UserRole.MEDICO) {
+            initialValues.doctorId = this.authService.currentUser()?.id;
+        }
+
+        this.appointmentForm.reset(initialValues);
         this.isFormModalOpen.set(true);
     }
 
@@ -320,10 +434,28 @@ export class AppointmentsComponent implements OnInit {
         if (this.appointmentForm.invalid) return;
 
         this.isLoading.set(true);
-        const formValue = this.appointmentForm.value;
+        const formValue = this.appointmentForm.getRawValue(); // Usar getRawValue para incluir campos disabled
+        const { date, time } = formValue.schedule;
 
-        // Combinar fecha y hora en un solo ISO string
-        const dateTimeStart = new Date(`${formValue.startTime}T${formValue.horaInicio}:00`);
+        const dateTimeStart = new Date(`${date}T${time}:00`);
+
+        if (this.isRescheduleMode() && this.selectedAppointment()) {
+            this.appointmentService.rescheduleAppointment(
+                this.selectedAppointment()!.id,
+                dateTimeStart.toISOString(),
+                Number(formValue.duracion) // Asegurar que sea número
+            ).subscribe({
+                next: (res) => {
+                    if (res.success) {
+                        this.isFormModalOpen.set(false);
+                        this.loadAppointments();
+                    }
+                    this.isLoading.set(false);
+                },
+                error: () => this.isLoading.set(false)
+            });
+            return;
+        }
 
         const payload = {
             patientId: formValue.patientId,
@@ -359,7 +491,7 @@ export class AppointmentsComponent implements OnInit {
     }
 
     protected getAppointmentsForDay(date: Date): Appointment[] {
-        return this.appointments().filter(a => {
+        return this.displayAppointments().filter(a => {
             const aDate = new Date(a.startTime);
             return aDate.getDate() === date.getDate() &&
                 aDate.getMonth() === date.getMonth() &&

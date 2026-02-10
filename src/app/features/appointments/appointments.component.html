@@ -56,6 +56,51 @@
             </div>
         </header>
 
+        <!-- Filters Bar: Refined layout with wrapping for responsiveness -->
+        <div class="px-6 lg:px-12 py-4 bg-white border-b border-slate-100 flex flex-wrap items-center gap-x-8 gap-y-6">
+
+            <!-- Status Filter -->
+            <div class="flex items-center gap-3">
+                <span
+                    class="text-[9px] font-black uppercase tracking-widest text-slate-300 whitespace-nowrap pt-1">Estado:</span>
+                <div class="flex flex-wrap gap-1">
+                    @for (status of availableStatuses; track status) {
+                    <button (click)="statusFilter.set(status)" [class.bg-black]="statusFilter() === status"
+                        [class.text-white]="statusFilter() === status" [class.border-black]="statusFilter() === status"
+                        class="px-2.5 py-1.5 border border-slate-100 text-[8px] font-black uppercase tracking-widest hover:border-black transition-all whitespace-nowrap">
+                        {{ status }}
+                    </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Doctor Filter (Admin/Receptionist only) -->
+            @if (authService.userRole() !== UserRole.MEDICO) {
+            <div class="flex items-center gap-3">
+                <span
+                    class="text-[9px] font-black uppercase tracking-widest text-slate-300 whitespace-nowrap pt-1">Médico:</span>
+                <div class="w-[220px]">
+                    <app-searchable-select [value]="doctorFilter()" (selectionChange)="doctorFilter.set($event)"
+                        [options]="doctorOptions()" [placeholder]="'TODOS LOS MÉDICOS'" [loading]="loadingDoctors()"
+                        [compact]="true">
+                    </app-searchable-select>
+                </div>
+            </div>
+            }
+
+            <!-- Patient Filter -->
+            <div class="flex items-center gap-3">
+                <span
+                    class="text-[9px] font-black uppercase tracking-widest text-slate-300 whitespace-nowrap pt-1">Paciente:</span>
+                <div class="w-[220px]">
+                    <app-searchable-select [value]="patientFilter()" (selectionChange)="patientFilter.set($event)"
+                        (searchChange)="searchPatients($event)" [options]="patientOptions()"
+                        [placeholder]="'TODOS LOS PACIENTES'" [loading]="searchingPatients()" [compact]="true">
+                    </app-searchable-select>
+                </div>
+            </div>
+        </div>
+
         <!-- Calendar Container -->
         <div class="flex-1 overflow-auto custom-scrollbar p-6">
 
@@ -94,7 +139,7 @@
                                     class="absolute left-full ml-4 top-0 w-64 bg-white shadow-2xl border-2 border-black p-4 z-[100] opacity-0 invisible transition-all duration-200 transform translate-x-2"
                                     [class.translate-x-0]="activeTooltipId() === app.id">
 
-                                    <button (click)="closeTooltip()"
+                                    <button (click)="closeTooltip(); $event.stopPropagation()"
                                         class="absolute top-2 right-2 p-1 hover:bg-slate-100 transition-colors">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -131,17 +176,47 @@
                                             </div>
 
                                             @if (canEdit(app.status)) {
-                                            <div class="flex gap-2">
-                                                <button (click)="openEditModal(app, $event)"
-                                                    class="flex-1 bg-black text-white text-[9px] font-black uppercase py-2 hover:bg-cyan-600 transition-all">
-                                                    Editar
+                                            <div class="flex flex-col gap-2">
+                                                @if (authService.userRole() === UserRole.MEDICO && app.status ===
+                                                AppointmentStatus.CONFIRMADA) {
+                                                <button (click)="startConsultation(app.id, $event)"
+                                                    class="w-full bg-cyan-600 text-white text-[9px] font-black uppercase py-2 hover:bg-cyan-700 transition-all border-b-2 border-cyan-800 active:translate-y-[1px] active:border-b-0 mb-1">
+                                                    ⚡ Iniciar Consulta
                                                 </button>
-                                                <button (click)="deleteAppointment(app.id, $event)"
-                                                    class="px-3 border border-red-600 text-red-600 hover:bg-red-50 transition-all font-black text-[9px] uppercase">
-                                                    X
-                                                </button>
+                                                }
+                                                <div class="flex gap-2">
+                                                    <button (click)="openRescheduleModal(app, $event)"
+                                                        class="flex-1 bg-black text-white text-[9px] font-black uppercase py-2 hover:bg-cyan-600 transition-all">
+                                                        Reprogramar
+                                                    </button>
+                                                    <button (click)="openCancel(app.id, $event)"
+                                                        class="px-3 border border-red-600 text-red-600 hover:bg-red-50 transition-all font-black text-[9px] uppercase">
+                                                        X
+                                                    </button>
+                                                </div>
+
+                                                @if (cancellingId() === app.id) {
+                                                <div class="mt-2 p-3 bg-red-50 border-2 border-black animate-enter space-y-3"
+                                                    (click)="$event.stopPropagation()">
+                                                    <p
+                                                        class="text-[9px] font-black uppercase tracking-widest text-red-600">
+                                                        Motivo</p>
+                                                    <textarea [ngModel]="cancelReason()"
+                                                        (ngModelChange)="cancelReason.set($event)"
+                                                        class="w-full border border-slate-200 p-2 text-[10px] font-bold uppercase focus:border-black outline-none resize-none"
+                                                        rows="2" placeholder="RAZÓN..."></textarea>
+                                                    <div class="flex gap-2">
+                                                        <button (click)="onCancelAppointment(app.id, $event)"
+                                                            [disabled]="!cancelReason().trim() || isLoading()"
+                                                            class="flex-1 bg-red-600 text-white text-[9px] font-black uppercase py-1.5 hover:bg-red-700 disabled:opacity-20 transition-all">
+                                                            Ok
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                }
                                             </div>
                                             }
+
                                         </div>
                                     </div>
                                 </div>
@@ -250,7 +325,7 @@
                                         [class.translate-y-0]="viewMode() === 'day' && activeTooltipId() === app.id"
                                         style="width: 280px;">
 
-                                        <button (click)="closeTooltip()"
+                                        <button (click)="closeTooltip(); $event.stopPropagation()"
                                             class="absolute top-2 right-2 p-1 hover:bg-slate-100 transition-colors">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -298,17 +373,51 @@
                                                 </div>
 
                                                 @if (canEdit(app.status)) {
-                                                <div class="flex gap-2">
-                                                    <button (click)="openEditModal(app, $event)"
-                                                        class="flex-1 bg-black text-white text-[9px] font-black uppercase py-2 hover:bg-cyan-600 transition-all">
-                                                        Editar Programación
+                                                <div class="flex flex-col gap-2">
+                                                    @if (authService.userRole() === UserRole.MEDICO && app.status ===
+                                                    AppointmentStatus.CONFIRMADA) {
+                                                    <button (click)="startConsultation(app.id, $event)"
+                                                        class="w-full bg-cyan-600 text-white text-[9px] font-black uppercase py-2 hover:bg-cyan-700 transition-all border-b-2 border-cyan-800 active:translate-y-[1px] active:border-b-0 mb-1">
+                                                        ⚡ Iniciar Consulta
                                                     </button>
-                                                    <button (click)="deleteAppointment(app.id, $event)"
-                                                        class="px-3 border border-red-600 text-red-600 hover:bg-red-50 transition-all font-black text-[9px] uppercase">
-                                                        Eliminar
-                                                    </button>
+                                                    }
+                                                    <div class="flex gap-2">
+                                                        <button (click)="openRescheduleModal(app, $event)"
+                                                            class="flex-1 bg-black text-white text-[9px] font-black uppercase py-2 hover:bg-cyan-600 transition-all">
+                                                            Reprogramar Cita
+                                                        </button>
+                                                        <button (click)="openCancel(app.id, $event)"
+                                                            class="px-3 border border-red-600 text-red-600 hover:bg-red-50 transition-all font-black text-[9px] uppercase">
+                                                            Cancelar Cita
+                                                        </button>
+                                                    </div>
+
+                                                    @if (cancellingId() === app.id) {
+                                                    <div class="mt-2 p-3 bg-red-50 border-2 border-black animate-enter space-y-3"
+                                                        (click)="$event.stopPropagation()">
+                                                        <p
+                                                            class="text-[9px] font-black uppercase tracking-widest text-red-600">
+                                                            Protocolo de Cancelación / Motivo</p>
+                                                        <textarea [ngModel]="cancelReason()"
+                                                            (ngModelChange)="cancelReason.set($event)"
+                                                            class="w-full border border-slate-200 p-2 text-[10px] font-bold uppercase focus:border-black outline-none resize-none"
+                                                            rows="2" placeholder="DIGITE LA RAZÓN..."></textarea>
+                                                        <div class="flex gap-2">
+                                                            <button (click)="onCancelAppointment(app.id, $event)"
+                                                                [disabled]="!cancelReason().trim() || isLoading()"
+                                                                class="flex-1 bg-red-600 text-white text-[9px] font-black uppercase py-1.5 hover:bg-red-700 disabled:opacity-20 transition-all">
+                                                                Confirmar Cancelación
+                                                            </button>
+                                                            <button (click)="closeCancel($event)"
+                                                                class="px-2 border border-black text-black text-[9px] font-black uppercase hover:bg-white transition-all">
+                                                                Volver
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    }
                                                 </div>
                                                 }
+
                                             </div>
                                         </div>
                                     </div>
@@ -326,7 +435,7 @@
 
     <!-- Appointment Modal -->
     <app-modal [isOpen]="isFormModalOpen()" (close)="isFormModalOpen.set(false)"
-        title="Protocolo / Programación de Cita">
+        [title]="isRescheduleMode() ? 'Protocolo / Reprogramación de Cita' : 'Protocolo / Programación de Cita'">
         <form [formGroup]="appointmentForm" (ngSubmit)="onSubmit()" class="space-y-8 p-2">
             <div class="space-y-8">
 
@@ -349,64 +458,59 @@
                         </div>
 
                         <!-- Doctor Selection -->
+                        @if (authService.userRole() !== UserRole.MEDICO) {
                         <div class="space-y-2">
                             <app-searchable-select formControlName="doctorId" [label]="'Médico Facultativo'"
                                 [options]="doctorOptions()" [placeholder]="'BUSCAR MÉDICO POR ESPECIALIDAD...'"
                                 [loading]="loadingDoctors()" [emptyMessage]="'NO SE DETECTARON MÉDICOS'">
                             </app-searchable-select>
                         </div>
+                        }
                     </div>
                 </div>
 
                 <!-- Sección 02: Cronograma -->
                 <div class="space-y-4">
                     <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">02 / Cronograma
+                        <span class="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-600">02 / Cronograma
                             Operativo</span>
                         <div class="h-[1px] flex-1 bg-slate-100"></div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-6">
                         <div class="space-y-2">
-                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha
-                                de Intervención</label>
-                            <input type="date" formControlName="startTime"
-                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200" />
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Hora de
-                                Inicio</label>
-                            <input type="time" formControlName="horaInicio"
-                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all placeholder:text-slate-200" />
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha y
+                                Hora de Intervención</label>
+                            <app-date-selector formControlName="schedule" [minDate]="todayDate()">
+                            </app-date-selector>
                         </div>
 
-                        <div class="space-y-2">
-                            <label
-                                class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Duración
-                                del Bloque</label>
-                            <select formControlName="duracion"
-                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all appearance-none bg-white font-bold placeholder:text-slate-200">
-                                <option [value]="15">15 Minutos</option>
-                                <option [value]="30">30 Minutos</option>
-                                <option [value]="45">45 Minutos</option>
-                                <option [value]="60">1 Hora (Estándar)</option>
-                                <option [value]="90">1.5 Horas (Extendido)</option>
-                            </select>
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Estado
-                                de la Cita</label>
-                            <select formControlName="status"
-                                class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all appearance-none bg-white font-bold placeholder:text-slate-200">
-                                <option [value]="AppointmentStatus.PENDIENTE">Pendiente</option>
-                                <option [value]="AppointmentStatus.CONFIRMADA">Confirmada</option>
-                                <option [value]="AppointmentStatus.EN_CONSULTA">En Consulta</option>
-                                <option [value]="AppointmentStatus.COMPLETADA">Completada</option>
-                                <option [value]="AppointmentStatus.CANCELADA">Cancelada</option>
-                            </select>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-50">
+                            <div class="space-y-2">
+                                <label
+                                    class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Duración
+                                    del Bloque</label>
+                                <select formControlName="duracion"
+                                    class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all appearance-none bg-white font-bold placeholder:text-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed">
+                                    <option [value]="15">15 Minutos</option>
+                                    <option [value]="30">30 Minutos</option>
+                                    <option [value]="45">45 Minutos</option>
+                                    <option [value]="60">1 Hora (Estándar)</option>
+                                    <option [value]="90">1.5 Horas (Extendido)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                @if (appointmentForm.errors?.['pastDate'] && appointmentForm.get('schedule')?.touched) {
+                <div class="p-3 bg-red-50 border-l-4 border-black animate-enter">
+                    <span class="text-[9px] font-black uppercase text-red-600 tracking-widest block mb-1">Error
+                        Cronológico / Bloqueo</span>
+                    <p class="text-[10px] font-bold text-black uppercase">No se permiten intervenciones en fechas u
+                        horas pasadas.</p>
+                </div>
+                }
 
                 <!-- Sección 03: Protocolo -->
                 <div class="space-y-4">
@@ -420,7 +524,7 @@
                         <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400">Descripción
                             Técnica / Observaciones</label>
                         <textarea formControlName="reason" rows="3"
-                            class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all resize-none placeholder:text-slate-200"
+                            class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all resize-none placeholder:text-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
                             placeholder="DESCRIPCIÓN DEL MOTIVO DE CONSULTA..."></textarea>
                     </div>
                 </div>

@@ -6,9 +6,11 @@
 
 <div class="space-y-2">
     <!-- Selected Value Display / Trigger -->
-    <button type="button" (click)="toggleDropdown()"
-        class="w-full border border-slate-200 p-4 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all text-left flex items-center justify-between bg-white hover:border-slate-300">
-        <span [class.text-slate-400]="!selectedValue()">
+    <button type="button" (click)="toggleDropdown()" [class.bg-slate-50]="isDisabled()"
+        [class.text-slate-400]="isDisabled()" [class.cursor-not-allowed]="isDisabled()" [class.p-4]="!compact()"
+        [class.px-3]="compact()" [class.py-2]="compact()"
+        class="w-full border border-slate-200 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all text-left flex items-center justify-between bg-white hover:border-slate-300">
+        <span [class.text-slate-400]="!selectedValue()" [class.text-[10px]]="compact()">
             {{ selectedLabel() || placeholder() }}
         </span>
         <svg class="w-5 h-5 text-slate-400 transition-transform" [class.rotate-180]="isOpen()" fill="none"

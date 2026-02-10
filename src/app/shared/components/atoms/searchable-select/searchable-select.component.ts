@@ -1,4 +1,4 @@
-import { Component, input, output, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, signal, computed, ChangeDetectionStrategy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
@@ -29,14 +29,28 @@ export class SearchableSelectComponent implements ControlValueAccessor {
     readonly label = input<string>('');
     readonly loading = input<boolean>(false);
     readonly emptyMessage = input<string>('No se encontraron resultados');
+    readonly value = input<string>(''); // Nuevo: para uso sin FormControl
+    readonly compact = input<boolean>(false); // Nuevo: para versión reducida en filtros
 
     // Outputs
     readonly searchChange = output<string>();
+    readonly selectionChange = output<string>(); // Nuevo: para emitir cambios en modo standalone
 
     // State
     protected readonly searchTerm = signal('');
     protected readonly isOpen = signal(false);
     protected readonly selectedValue = signal<string>('');
+    protected readonly isDisabled = signal<boolean>(false);
+
+    constructor() {
+        // Sincronizar el signal de valor cuando cambia el input 'value' (Modo Standalone)
+        effect(() => {
+            const externalValue = this.value();
+            if (externalValue !== undefined) {
+                this.selectedValue.set(externalValue);
+            }
+        });
+    }
 
     // Computed
     protected readonly filteredOptions = computed(() => {
@@ -70,6 +84,10 @@ export class SearchableSelectComponent implements ControlValueAccessor {
         this.onTouched = fn;
     }
 
+    setDisabledState(isDisabled: boolean): void {
+        this.isDisabled.set(isDisabled);
+    }
+
     // Methods
     protected onSearchInput(event: Event): void {
         const value = (event.target as HTMLInputElement).value;
@@ -81,11 +99,13 @@ export class SearchableSelectComponent implements ControlValueAccessor {
         this.selectedValue.set(option.value);
         this.onChange(option.value);
         this.onTouched();
+        this.selectionChange.emit(option.value); // Emitir para modo standalone
         this.isOpen.set(false);
         this.searchTerm.set('');
     }
 
     protected toggleDropdown(): void {
+        if (this.isDisabled()) return;
         this.isOpen.update(v => !v);
         if (!this.isOpen()) {
             this.searchTerm.set('');
