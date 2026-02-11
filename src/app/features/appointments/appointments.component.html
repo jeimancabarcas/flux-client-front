@@ -554,75 +554,19 @@
                     </div>
                 </div>
 
-                <!-- Sección 04: Cargos Predeterminados -->
-                <div class="space-y-4">
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-600">04 / Cargos y
-                            Servicios (Opcional)</span>
-                        <div class="h-[1px] flex-1 bg-slate-100"></div>
-                    </div>
-
-                    <div class="space-y-6">
-                        <app-searchable-select formControlName="itemIds" [label]="'Buscar en el Catálogo'"
-                            [options]="catalogOptions()" [placeholder]="'BUSCAR CUPS / CUMS POR CÓDIGO...'"
-                            [multiple]="true" [loading]="searchingCatalog()"
-                            [emptyMessage]="'NO SE ENCONTRARON COINCIDENCIAS'" (searchChange)="searchCatalog($event)"
-                            (selectionChange)="selectedIdsInForm.set($any($event))">
-                        </app-searchable-select>
-
-                        <!-- Selected Items List -->
-                        @if (selectedItemsList().length > 0) {
-                        <div class="space-y-3 animate-enter">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-slate-400">Cargos Vinculados
-                                ({{ selectedItemsList().length }})</p>
-                            <div class="flex flex-col gap-2">
-                                @for (item of selectedItemsList(); track item.id) {
-                                <div
-                                    class="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 group/item">
-                                    <div class="flex flex-col gap-0.5">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[8px] font-black px-1 border border-black italic">{{
-                                                item.code }}</span>
-                                            <span
-                                                class="text-[10px] font-black text-black uppercase truncate max-w-[200px]">{{
-                                                item.name }}</span>
-                                        </div>
-                                        <span
-                                            class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Precio:
-                                            {{ item.price | currency }}</span>
-                                    </div>
-                                    <button type="button" (click)="removeItem(item.id)"
-                                        class="p-2 text-slate-300 hover:text-red-600 hover:bg-white transition-all">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                </div>
-                                }
-                            </div>
-                        </div>
-                        }
-
-                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                            Los ítems seleccionados se cargarán automáticamente a la cuenta del paciente al momento de
-                            la admisión.
-                        </p>
-                    </div>
+                <!-- Acciones de Ejecución -->
+                <div class="pt-8 flex flex-col sm:flex-row gap-4 border-t border-slate-100">
+                    <button type="submit" [disabled]="appointmentForm.invalid || isLoading()"
+                        class="flex-1 bg-black text-white p-5 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-cyan-600 disabled:opacity-20 transition-all font-['Inter'] shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
+                        @if (isLoading()) { PROCESANDO... } @else { {{ selectedAppointment() ? 'ACTUALIZAR PROGRAMACIÓN'
+                        :
+                        'CONFIRMAR CITA' }} }
+                    </button>
+                    <button type="button" (click)="isFormModalOpen.set(false)"
+                        class="px-8 border border-black p-5 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 transition-all font-['Inter']">
+                        CANCELAR
+                    </button>
                 </div>
-            </div>
-
-            <!-- Acciones de Ejecución -->
-            <div class="pt-8 flex flex-col sm:flex-row gap-4 border-t border-slate-100">
-                <button type="submit" [disabled]="appointmentForm.invalid || isLoading()"
-                    class="flex-1 bg-black text-white p-5 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-cyan-600 disabled:opacity-20 transition-all font-['Inter'] shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
-                    @if (isLoading()) { PROCESANDO... } @else { {{ selectedAppointment() ? 'ACTUALIZAR PROGRAMACIÓN' :
-                    'CONFIRMAR CITA' }} }
-                </button>
-                <button type="button" (click)="isFormModalOpen.set(false)"
-                    class="px-8 border border-black p-5 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 transition-all font-['Inter']">
-                    CANCELAR
-                </button>
             </div>
         </form>
     </app-modal>

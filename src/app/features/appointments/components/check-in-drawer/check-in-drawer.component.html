@@ -42,42 +42,147 @@
                 </div>
             </div>
 
+            <!-- Payment Type Selection -->
+            <div class="space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-600">02 / Modalidad de
+                        Pago</span>
+                    <div class="h-[1px] flex-1 bg-slate-100"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <button (click)="paymentType.set('PARTICULAR')"
+                        class="p-4 border-2 transition-all flex flex-col gap-2 text-left"
+                        [class.border-black]="paymentType() === 'PARTICULAR'"
+                        [class.bg-slate-50]="paymentType() === 'PARTICULAR'"
+                        [class.border-slate-100]="paymentType() === 'CONVENIO'">
+                        <span class="text-[10px] font-black uppercase tracking-widest">Particular</span>
+                        <span class="text-[9px] font-bold text-slate-400">PAGO DIRECTO</span>
+                    </button>
+                    <button (click)="paymentType.set('CONVENIO')"
+                        class="p-4 border-2 transition-all flex flex-col gap-2 text-left"
+                        [class.border-black]="paymentType() === 'CONVENIO'"
+                        [class.bg-slate-50]="paymentType() === 'CONVENIO'"
+                        [class.border-slate-100]="paymentType() === 'PARTICULAR'">
+                        <span class="text-[10px] font-black uppercase tracking-widest">Convenio</span>
+                        <span class="text-[9px] font-bold text-slate-400">EPS / PREPAGADA</span>
+                    </button>
+                </div>
+
+                @if (paymentType() === 'CONVENIO') {
+                <div class="space-y-4 pt-2 animate-enter">
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Seleccionar
+                            Entidad</label>
+                        <select [ngModel]="selectedPrepagadaId()" (ngModelChange)="selectedPrepagadaId.set($event)"
+                            class="w-full bg-white border border-black p-4 text-xs font-bold uppercase tracking-tight focus:bg-slate-50 outline-none transition-all">
+                            <option value="">-- SELECCIONAR CONVENIO --</option>
+                            @for (p of prepagadas(); track p.id) {
+                            <option [value]="p.id">{{ p.name }}</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Código de
+                            Autorización</label>
+                        <input type="text" [ngModel]="authorizationCode()"
+                            (ngModelChange)="authorizationCode.set($event)" placeholder="EJ: AUT-123456..."
+                            class="w-full border border-black p-4 text-xs font-bold uppercase tracking-tight focus:bg-slate-50 outline-none transition-all" />
+                    </div>
+                </div>
+                }
+            </div>
+
             <!-- Services Selection -->
             <div class="space-y-4">
                 <div class="flex items-center gap-2">
-                    <span class="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-600">02 / Servicios a
+                    <span class="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-600">03 / Servicios a
                         Facturar</span>
                     <div class="h-[1px] flex-1 bg-slate-100"></div>
                 </div>
 
+                <!-- Búsqueda de Servicios Adicionales -->
+                <div class="space-y-2">
+                    <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Buscar y Agregar
+                        Servicio / Producto</label>
+                    <app-searchable-select [options]="catalogOptions()" [placeholder]="'BUSCAR EN EL CATÁLOGO...'"
+                        [value]="''" (selectionChange)="addItem($any($event))" [compact]="true">
+                    </app-searchable-select>
+                </div>
+
                 <div class="space-y-3">
                     @for (item of mappedItems(); track item.id) {
-                    <div class="flex items-start gap-3 p-3 border transition-all cursor-pointer group hover:bg-slate-50"
+                    <div class="flex flex-col p-4 border transition-all cursor-pointer group hover:bg-slate-50 gap-3"
                         [class.border-emerald-500]="selectedItemIds().has(item.id)"
                         [class.bg-emerald-50]="selectedItemIds().has(item.id)"
                         [class.border-slate-200]="!selectedItemIds().has(item.id)" (click)="toggleItem(item.id)">
 
-                        <div class="relative flex items-center justify-center w-5 h-5 mt-0.5 border-2 transition-colors"
-                            [class.border-emerald-600]="selectedItemIds().has(item.id)"
-                            [class.bg-emerald-600]="selectedItemIds().has(item.id)"
-                            [class.border-slate-300]="!selectedItemIds().has(item.id)">
-                            @if (selectedItemIds().has(item.id)) {
-                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                    d="M5 13l4 4L19 7" />
-                            </svg>
-                            }
+                        <div class="flex items-start gap-4">
+                            <div class="relative flex items-center justify-center w-5 h-5 mt-0.5 border-2 transition-colors flex-none"
+                                [class.border-emerald-600]="selectedItemIds().has(item.id)"
+                                [class.bg-emerald-600]="selectedItemIds().has(item.id)"
+                                [class.border-slate-300]="!selectedItemIds().has(item.id)">
+                                @if (selectedItemIds().has(item.id)) {
+                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                        d="M5 13l4 4L19 7" />
+                                </svg>
+                                }
+                            </div>
+
+                            <div class="flex-1 flex flex-col gap-1">
+                                <div class="flex justify-between items-start">
+                                    <span class="text-xs font-black uppercase tracking-tight leading-snug">{{ item.name
+                                        }}</span>
+                                    <span class="text-xs font-black text-slate-900">{{ item.price | currency }}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] font-bold text-slate-400">CÓDIGO: {{ item.code }}</span>
+
+                                    <!-- Badge Aplicación Convenio -->
+                                    @if (paymentType() === 'CONVENIO' && selectedPrepagadaId()) {
+                                    @if (getAgreementForItem(item.id); as agreement) {
+                                    <span
+                                        class="text-[8px] font-black bg-emerald-600 text-white px-2 py-0.5 uppercase tracking-tighter">
+                                        Aplica Convenio
+                                    </span>
+                                    } @else {
+                                    <span
+                                        class="text-[8px] font-black bg-slate-200 text-slate-500 px-2 py-0.5 uppercase tracking-tighter">
+                                        Valor Particular
+                                    </span>
+                                    }
+                                    }
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="flex-1 flex flex-col">
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs font-black uppercase tracking-tight leading-snug">{{ item.name
-                                    }}</span>
-                                <span class="text-xs font-bold text-emerald-700 ml-2 whitespace-nowrap">{{ item.price |
-                                    currency }}</span>
+                        <!-- Desglose por Item en Convenio -->
+                        @if (paymentType() === 'CONVENIO' && selectedPrepagadaId()) {
+                        <div class="pt-3 border-t border-emerald-100 flex flex-col gap-1.5">
+                            @if (getAgreementForItem(item.id); as agreement) {
+                            <div class="flex justify-between items-center text-[10px]">
+                                <span class="font-bold text-slate-400 uppercase tracking-tight">Cubre Entidad:</span>
+                                <span class="font-black text-cyan-600">{{ agreement.entityAmount | currency }}</span>
                             </div>
-                            <span class="text-[9px] font-bold text-slate-400 mt-1">CÓDIGO: {{ item.code }}</span>
+                            <div class="flex justify-between items-center text-[10px]">
+                                <span class="font-bold text-slate-500 uppercase tracking-tight">Costo Paciente:</span>
+                                <span class="font-black text-emerald-700">{{ agreement.patientAmount | currency
+                                    }}</span>
+                            </div>
+                            } @else {
+                            <div class="flex justify-between items-center text-[10px] opacity-60">
+                                <span class="font-bold text-slate-400 uppercase tracking-tight">Cubre Entidad:</span>
+                                <span class="font-black text-slate-400">$ 0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px]">
+                                <span class="font-bold text-slate-500 uppercase tracking-tight">Costo Paciente:</span>
+                                <span class="font-black text-slate-900">{{ item.price | currency }}</span>
+                            </div>
+                            }
                         </div>
+                        }
                     </div>
                     } @empty {
                     <div
@@ -89,13 +194,46 @@
             </div>
 
             <!-- Total Summary -->
-            <div class="p-5 bg-black text-white flex justify-between items-center shadow-lg">
-                <div class="flex flex-col">
-                    <span class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60">Total Estimado</span>
-                    <span class="text-2xl font-black tracking-tighter">{{ totalAmount() | currency }}</span>
+            <div class="p-6 bg-black text-white space-y-4 shadow-xl">
+                <!-- Breakdown Structure -->
+                @if (paymentType() === 'CONVENIO') {
+                <div class="space-y-2 pb-4 border-b border-white/10">
+                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-widest opacity-60">
+                        <span>Subtotal Bruto:</span>
+                        <span>{{ totalOriginalAmount() | currency }}</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-black uppercase tracking-widest text-cyan-400">
+                        <span>Aporte Entidad:</span>
+                        <span>- {{ entityPayAmount() | currency }}</span>
+                    </div>
                 </div>
-                <div class="text-[10px] font-black uppercase tracking-widest bg-white/10 px-3 py-1 rounded">
-                    {{ selectedItemIds().size }} Items
+                }
+
+                <div class="flex justify-between items-end">
+                    <div class="flex flex-col">
+                        <span class="text-[9px] font-black uppercase tracking-[0.2em] opacity-60">
+                            {{ paymentType() === 'PARTICULAR' ? 'TOTAL A PAGAR' : 'TOTAL NETO PACIENTE (COPAGO)' }}
+                        </span>
+                        <span class="text-3xl font-black tracking-tighter">{{ patientPayAmount() | currency }}</span>
+                    </div>
+                    @if (paymentType() === 'CONVENIO' && totalOriginalAmount() > 0 && entityPayAmount() > 0) {
+                    <div class="bg-emerald-600 px-3 py-1.5 flex flex-col items-center">
+                        <span class="text-[8px] font-black uppercase tracking-widest text-emerald-100">Ahorro</span>
+                        <span class="text-xs font-black">{{ (entityPayAmount() / totalOriginalAmount() * 100) |
+                            number:'1.0-0' }}%</span>
+                    </div>
+                    }
+                </div>
+
+                <div class="pt-4 border-t border-white/10 flex justify-between items-center">
+                    <div class="text-[10px] font-black uppercase tracking-widest bg-white/10 px-3 py-1">
+                        {{ selectedItemIds().size }} Items Seleccionados
+                    </div>
+                    @if (paymentType() === 'CONVENIO' && selectedPrepagadaId()) {
+                    <span class="text-[9px] font-black uppercase tracking-widest text-cyan-400">
+                        {{ getSelectedPrepagadaName() }}
+                    </span>
+                    }
                 </div>
             </div>
 
@@ -103,13 +241,14 @@
 
         <!-- Footer Actions -->
         <div class="p-6 border-t border-slate-100 bg-white space-y-3">
-            <button (click)="confirmAndBill()" [disabled]="isLoading()"
-                class="w-full py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-[0.3em] hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none">
-                {{ isLoading() ? 'Procesando...' : (selectedItemIds().size > 0 ? 'Generar Factura y Confirmar' :
+            <button (click)="confirmAndBill()"
+                [disabled]="isLoading() || (paymentType() === 'CONVENIO' && (!selectedPrepagadaId() || !authorizationCode().trim() || selectedItemIds().size === 0))"
+                class="w-full py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-[0.3em] hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none font-['Inter']">
+                {{ isLoading() ? 'Procesando...' : (patientPayAmount() > 0 ? 'Generar Factura y Confirmar' :
                 'Confirmar Ingreso Sin Costo') }}
             </button>
             <button (click)="close.emit()"
-                class="w-full py-3 border border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 hover:text-black transition-all">
+                class="w-full py-3 border border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-slate-50 hover:text-black transition-all font-['Inter']">
                 Cancelar Operación
             </button>
         </div>

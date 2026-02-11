@@ -45,8 +45,15 @@ export class SearchableSelectComponent implements ControlValueAccessor {
     protected readonly isDisabled = signal<boolean>(false);
 
     constructor() {
-        // El estado se sincroniza primordialmente vía writeValue (ControlValueAccessor)
-        // o mediante interacción del usuario.
+        effect(() => {
+            const val = this.value();
+            if (this.multiple()) {
+                const arr = Array.isArray(val) ? val : (val ? [val] : []);
+                this.selectedValues.set(arr);
+            } else {
+                this.selectedValue.set(val || '');
+            }
+        }, { allowSignalWrites: true });
     }
 
     // Computed

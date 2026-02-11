@@ -4,7 +4,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AppointmentService } from '../../core/services/appointment.service';
 import { RdaService } from '../../core/services/rda.service';
 import { Appointment, AppointmentStatus } from '../../core/models/appointment.model';
-import { CardComponent } from '../../shared/components/atoms/card/card.component';
 import { SidebarComponent } from '../../shared/components/organisms/sidebar/sidebar.component';
 import { HistoryLocalComponent } from './components/history-local/history-local.component';
 import { HistoryInteroperableComponent } from './components/history-interoperable/history-interoperable.component';
@@ -16,7 +15,6 @@ import { ClinicalRecordRDA } from '../../core/models/rda.model';
     standalone: true,
     imports: [
         CommonModule,
-        CardComponent,
         SidebarComponent,
         HistoryLocalComponent,
         HistoryInteroperableComponent,

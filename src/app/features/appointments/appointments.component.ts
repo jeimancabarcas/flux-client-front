@@ -1,5 +1,4 @@
 import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { AppointmentService } from '../../core/services/appointment.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -81,18 +80,9 @@ export class AppointmentsComponent implements OnInit {
     protected readonly doctors = signal<User[]>([]);
     protected readonly loadingDoctors = signal(false);
 
-    // Catalog items
+    // Catalog items (needed for check-in drawer)
     protected readonly catalogItems = signal<CatalogItem[]>([]);
-    protected readonly searchingCatalog = signal(false);
 
-    // Reactive signal to track IDs in the form for immediate UI feedback
-    protected readonly selectedIdsInForm = signal<string[]>([]);
-
-    // Computed to show details of selected items
-    protected readonly selectedItemsList = computed(() => {
-        const ids = this.selectedIdsInForm();
-        return this.catalogItems().filter(i => ids.includes(i.id));
-    });
 
     // Computed Options for Searchable Selects
     protected readonly patientOptions = computed<SearchableOption[]>(() =>
@@ -116,15 +106,6 @@ export class AppointmentsComponent implements OnInit {
         })
     );
 
-    protected readonly catalogOptions = computed<SearchableOption[]>(() =>
-        this.catalogItems()
-            .filter(i => i.isActive)
-            .map(i => ({
-                value: i.id,
-                label: i.name,
-                sublabel: `${i.code} | $${i.price.toLocaleString()}`
-            }))
-    );
 
     protected readonly displayAppointments = computed(() => {
         let filtered = this.appointments();
@@ -175,14 +156,8 @@ export class AppointmentsComponent implements OnInit {
             schedule: ['', Validators.required], // Objeto { date, time }
             duracion: [30, [Validators.required, Validators.min(15)]],
             reason: ['', Validators.required],
-            status: [AppointmentStatus.PENDIENTE],
-            itemIds: [[]]
+            status: [AppointmentStatus.PENDIENTE]
         }, { validators: this.futureDateValidator });
-
-        // Synchronize signal with form changes
-        this.appointmentForm.get('itemIds')?.valueChanges.subscribe(val => {
-            this.selectedIdsInForm.set(val || []);
-        });
     }
 
     /**
@@ -332,12 +307,8 @@ export class AppointmentsComponent implements OnInit {
             schedule: { date: dateStr, time: timeStr },
             duracion: this.getDuration(app),
             reason: app.reason,
-            status: app.status,
-            itemIds: app.itemIds || []
+            status: app.status
         });
-
-        // Sincronizar la señal para que se vean los items inmediatamente
-        this.selectedIdsInForm.set(app.itemIds || []);
 
         // Deshabilitar campos que no se pueden modificar en reprogramación
         this.appointmentForm.get('patientId')?.disable();
@@ -476,34 +447,6 @@ export class AppointmentsComponent implements OnInit {
         });
     }
 
-    protected searchCatalog(term: string): void {
-        if (!term || term.length < 2) {
-            this.loadCatalog();
-            return;
-        }
-
-        this.searchingCatalog.set(true);
-        this.mastersService.searchCatalog(term).subscribe({
-            next: (res) => {
-                if (res.success) {
-                    // Mezclar con los ya cargados para no perder referencias de items seleccionados
-                    const currentItems = this.catalogItems();
-                    const newItems = res.data.filter(ni => !currentItems.find(ci => ci.id === ni.id));
-                    this.catalogItems.set([...currentItems, ...newItems]);
-                }
-                this.searchingCatalog.set(false);
-            },
-            error: () => this.searchingCatalog.set(false)
-        });
-    }
-
-    protected removeItem(itemId: string): void {
-        const currentIds = this.appointmentForm.get('itemIds')?.value as string[] || [];
-        const next = currentIds.filter(id => id !== itemId);
-        this.appointmentForm.get('itemIds')?.setValue(next);
-        this.selectedIdsInForm.set(next);
-    }
-
     protected openCreateModal(date?: Date, hour?: number): void {
         this.selectedAppointment.set(null);
         this.isRescheduleMode.set(false);
@@ -530,7 +473,6 @@ export class AppointmentsComponent implements OnInit {
         }
 
         this.appointmentForm.reset(initialValues);
-        this.selectedIdsInForm.set([]);
         this.isFormModalOpen.set(true);
     }
 
@@ -567,8 +509,7 @@ export class AppointmentsComponent implements OnInit {
             startTime: dateTimeStart.toISOString(),
             durationMinutes: Number(formValue.duracion), // Asegurar que sea número
             reason: formValue.reason,
-            status: formValue.status,
-            itemIds: formValue.itemIds
+            status: formValue.status
         };
 
         const request$ = this.selectedAppointment()

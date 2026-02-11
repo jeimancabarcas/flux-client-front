@@ -104,8 +104,11 @@ export class AppointmentService {
     /**
      * Confirmar asistencia y generar factura
      */
-    confirmAppointment(id: string, itemIds: string[]): Observable<GenericApiResponse<void>> {
-        return this.http.patch<GenericApiResponse<void>>(`${this.apiUrl}/${id}/confirm`, { itemIds });
+    confirmAppointment(id: string, itemIds: string[], billingData?: { paymentType?: string, prepagadaId?: string, authorizationCode?: string }): Observable<GenericApiResponse<void>> {
+        return this.http.patch<GenericApiResponse<void>>(`${this.apiUrl}/${id}/confirm`, {
+            itemIds,
+            ...billingData
+        });
     }
 
     /**
