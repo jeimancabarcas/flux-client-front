@@ -28,6 +28,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/appointments/appointments.component').then(m => m.AppointmentsComponent)
     },
     {
+        path: 'billing',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/billing/billing.component').then(m => m.BillingComponent)
+    },
+    {
         path: 'appointments/:id/consultation',
         canActivate: [authGuard],
         loadComponent: () => import('./features/consultation/consultation.component').then(m => m.ConsultationComponent)

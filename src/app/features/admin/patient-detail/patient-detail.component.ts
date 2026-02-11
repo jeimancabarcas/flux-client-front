@@ -13,6 +13,7 @@ import { UserRole } from '../../../core/models/user.model';
 import { SidebarComponent } from '../../../shared/components/organisms/sidebar/sidebar.component';
 import { CheckInDrawerComponent } from '../../appointments/components/check-in-drawer/check-in-drawer.component';
 import { MastersService } from '../../../core/services/masters.service';
+import { BillingService } from '../../../core/services/billing.service';
 import { CatalogItem } from '../../../core/models/masters.model';
 
 interface BillingRecord {
@@ -37,6 +38,7 @@ export class PatientDetailComponent implements OnInit {
     private readonly appointmentService = inject(AppointmentService);
     private readonly rdaService = inject(RdaService);
     private readonly mastersService = inject(MastersService);
+    private readonly billingService = inject(BillingService);
     protected readonly authService = inject(AuthService);
 
     // State
@@ -105,13 +107,25 @@ export class PatientDetailComponent implements OnInit {
             });
         }
 
-        // Mock Billing (ya que no hay servicio aún)
+        // Historial de Facturacion Real
         if (this.authService.userRole() !== UserRole.MEDICO) {
-            this.billingHistory.set([
-                { id: 'FAC-001', date: '2024-01-15', concept: 'Consulta General', amount: 50000, status: 'PAGADO' },
-                { id: 'FAC-002', date: '2024-02-10', concept: 'Laboratorio Clínico', amount: 120000, status: 'PAGADO' },
-                { id: 'FAC-003', date: '2024-03-05', concept: 'Electrocardiograma', amount: 85000, status: 'PENDIENTE' }
-            ]);
+            this.billingService.getInvoicesByPatientId(patientId).subscribe({
+                next: (res) => {
+                    if (res.success) {
+                        // Transformar datos según la estructura real de la API (totalAmount)
+                        const mappedInvoices: BillingRecord[] = res.data.map((inv: any) => ({
+                            id: inv.id,
+                            date: inv.createdAt,
+                            concept: inv.items && inv.items.length > 0
+                                ? (inv.items[0].productService?.name || 'Factura de Venta')
+                                : 'Factura de Venta',
+                            amount: inv.totalAmount || 0,
+                            status: inv.status || 'PAGADA'
+                        }));
+                        this.billingHistory.set(mappedInvoices);
+                    }
+                }
+            });
         }
 
         // Cargar Siguiente Cita
@@ -189,7 +203,9 @@ export class PatientDetailComponent implements OnInit {
             case 'CANCELADA': return 'bg-rose-100 text-rose-700 border-rose-200';
             case 'COMPLETADA': return 'bg-slate-100 text-slate-700 border-slate-200';
             case 'EN_CONSULTA': return 'bg-cyan-100 text-cyan-700 border-cyan-200';
-            case 'PAGADO': return 'bg-green-100 text-green-700 border-green-200';
+            case 'PAGADO':
+            case 'PAGADA': return 'bg-green-100 text-green-700 border-green-200';
+            case 'EMITIDA': return 'bg-amber-100 text-amber-700 border-amber-200';
             case 'ANULADO': return 'bg-gray-100 text-gray-700 border-gray-200';
             default: return 'bg-slate-50 text-slate-500 border-slate-100';
         }
