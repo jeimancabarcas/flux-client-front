@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Eps, Prepagada, CatalogItem } from '../models/masters.model';
+import { Eps, Prepagada, CatalogItem, Agreement } from '../models/masters.model';
 import { ApiResponse } from '../models/user.model';
 
 @Injectable({
@@ -65,5 +65,31 @@ export class MastersService {
 
     searchCatalog(term: string): Observable<ApiResponse<CatalogItem[]>> {
         return this.http.get<ApiResponse<CatalogItem[]>>(`${this.apiUrl}/catalog/search?term=${term}`);
+    }
+
+    // Agreements Methods
+    getAgreements(prepagadaId?: string, isActive?: boolean): Observable<ApiResponse<Agreement[]>> {
+        let url = `${this.apiUrl}/agreements`;
+        const params: string[] = [];
+        if (prepagadaId) params.push(`prepagadaId=${prepagadaId}`);
+        if (isActive !== undefined) params.push(`isActive=${isActive}`);
+
+        if (params.length > 0) {
+            url += `?${params.join('&')}`;
+        }
+
+        return this.http.get<ApiResponse<Agreement[]>>(url);
+    }
+
+    createAgreement(data: Partial<Agreement>): Observable<ApiResponse<Agreement>> {
+        return this.http.post<ApiResponse<Agreement>>(`${this.apiUrl}/agreements`, data);
+    }
+
+    updateAgreement(id: string, data: Partial<Agreement>): Observable<ApiResponse<Agreement>> {
+        return this.http.put<ApiResponse<Agreement>>(`${this.apiUrl}/agreements/${id}`, data);
+    }
+
+    deleteAgreement(id: string): Observable<ApiResponse<void>> {
+        return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/agreements/${id}`);
     }
 }

@@ -10,7 +10,8 @@
         [class.text-slate-400]="isDisabled()" [class.cursor-not-allowed]="isDisabled()" [class.p-4]="!compact()"
         [class.px-3]="compact()" [class.py-2]="compact()"
         class="w-full border border-slate-200 text-xs font-bold uppercase tracking-tight focus:border-black outline-none transition-all text-left flex items-center justify-between bg-white hover:border-slate-300">
-        <span [class.text-slate-400]="!selectedValue()" [class.text-[10px]]="compact()">
+        <span [class.text-slate-400]="!selectedValue() && selectedValues().length === 0"
+            [class.text-[10px]]="compact()">
             {{ selectedLabel() || placeholder() }}
         </span>
         <svg class="w-5 h-5 text-slate-400 transition-transform" [class.rotate-180]="isOpen()" fill="none"

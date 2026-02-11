@@ -18,11 +18,17 @@ export interface DoctorInfo {
     id: string;
     email: string;
     role: string;
-    detalles: {
+    detalles?: {
+        nombre: string;
+        apellido: string;
+    };
+    details?: {
         nombre: string;
         apellido: string;
     };
 }
+
+import { CatalogItem } from './masters.model';
 
 export interface Appointment {
     id: string;
@@ -40,6 +46,7 @@ export interface Appointment {
     patient?: PatientInfo;
     doctor?: DoctorInfo;
     itemIds?: string[]; // IDs del catálogo (CUPS/CUMS) para cargos pre-cargados
+    items?: CatalogItem[]; // Objetos completos devueltos por algunos endpoints
 }
 
 export type CalendarView = 'day' | 'week' | 'month';

@@ -1,5 +1,6 @@
 import { Component, inject, signal, OnInit, ChangeDetectionStrategy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PatientService } from '../../../core/services/patient.service';
 import { AppointmentService } from '../../../core/services/appointment.service';
@@ -10,6 +11,9 @@ import { Appointment } from '../../../core/models/appointment.model';
 import { ClinicalRecordRDA } from '../../../core/models/rda.model';
 import { UserRole } from '../../../core/models/user.model';
 import { SidebarComponent } from '../../../shared/components/organisms/sidebar/sidebar.component';
+import { CheckInDrawerComponent } from '../../appointments/components/check-in-drawer/check-in-drawer.component';
+import { MastersService } from '../../../core/services/masters.service';
+import { CatalogItem } from '../../../core/models/masters.model';
 
 interface BillingRecord {
     id: string;
@@ -21,8 +25,7 @@ interface BillingRecord {
 
 @Component({
     selector: 'app-patient-detail',
-    standalone: true,
-    imports: [CommonModule, SidebarComponent],
+    imports: [CommonModule, FormsModule, SidebarComponent, CheckInDrawerComponent],
     templateUrl: './patient-detail.component.html',
     styleUrl: './patient-detail.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -33,26 +36,44 @@ export class PatientDetailComponent implements OnInit {
     private readonly patientService = inject(PatientService);
     private readonly appointmentService = inject(AppointmentService);
     private readonly rdaService = inject(RdaService);
+    private readonly mastersService = inject(MastersService);
     protected readonly authService = inject(AuthService);
 
     // State
     protected readonly patient = signal<Patient | null>(null);
     protected readonly appointments = signal<Appointment[]>([]);
+    protected readonly totalAppointments = signal(0);
+    protected readonly currentPage = signal(1);
+    protected readonly appointmentsLimit = signal(5);
     protected readonly clinicalHistory = signal<ClinicalRecordRDA[]>([]);
     protected readonly billingHistory = signal<BillingRecord[]>([]);
     protected readonly nextAppointment = signal<Appointment | null>(null);
     protected readonly isLoading = signal(true);
+    protected readonly isNextAppLoading = signal(false);
     protected readonly isSidebarOpen = signal(false);
+
+    // Check-In Drawer State
+    protected readonly isCheckInDrawerOpen = signal(false);
+    protected readonly catalogItems = signal<CatalogItem[]>([]);
 
     protected readonly UserRole = UserRole;
 
     ngOnInit(): void {
         const patientId = this.route.snapshot.paramMap.get('id');
+        this.loadCatalog();
         if (patientId) {
             this.loadPatientData(patientId);
         } else {
             this.router.navigate(['/admin/patients']);
         }
+    }
+
+    private loadCatalog(): void {
+        this.mastersService.getCatalog().subscribe({
+            next: (res) => {
+                if (res.success) this.catalogItems.set(res.data);
+            }
+        });
     }
 
     private loadPatientData(id: string): void {
@@ -71,18 +92,7 @@ export class PatientDetailComponent implements OnInit {
     }
 
     private loadRelatedData(patientId: string): void {
-        // En un entorno real, filtraríamos por paciente. 
-        // Aquí asumimos que los servicios tienen métodos para esto o mockeamos.
-
-        // Citas (Mock o servicio real si existe el método)
-        this.appointmentService.getAppointments('2000-01-01', '2100-01-01').subscribe({
-            next: (res) => {
-                if (res.success) {
-                    // Filtrar citas del paciente
-                    this.appointments.set(res.data.filter(a => a.patientId === patientId));
-                }
-            }
-        });
+        this.loadAppointments(patientId, this.currentPage());
 
         // Historial Clínico Local (Solo para Médicos)
         if (this.authService.userRole() === UserRole.MEDICO) {
@@ -106,25 +116,62 @@ export class PatientDetailComponent implements OnInit {
 
         // Cargar Siguiente Cita
         const today = new Date().toISOString().split('T')[0];
+        this.isNextAppLoading.set(true);
         this.appointmentService.getNextAppointmentByPatientId(patientId, today).subscribe({
             next: (res) => {
                 if (res.success) {
                     this.nextAppointment.set(res.data);
                 }
-            }
+                this.isNextAppLoading.set(false);
+            },
+            error: () => this.isNextAppLoading.set(false)
         });
 
         this.isLoading.set(false);
     }
 
-    protected startAppointment(appointmentId: string): void {
-        this.appointmentService.startAppointment(appointmentId).subscribe({
+    private loadAppointments(patientId: string, page: number): void {
+        this.appointmentService.getPatientAppointmentHistory(patientId, page, this.appointmentsLimit()).subscribe({
             next: (res) => {
                 if (res.success) {
-                    this.router.navigate(['/appointments', appointmentId, 'consultation']);
+                    this.appointments.set(res.data.data);
+                    this.totalAppointments.set(res.data.total);
                 }
             }
         });
+    }
+
+    protected onLimitChange(limit: any): void {
+        const numLimit = Number(limit);
+        this.appointmentsLimit.set(numLimit);
+        this.currentPage.set(1);
+        const patientId = this.patient()?.id;
+        if (patientId) {
+            this.loadAppointments(patientId, 1);
+        }
+    }
+
+    protected onPageChange(page: number): void {
+        const patientId = this.patient()?.id;
+        if (patientId) {
+            this.currentPage.set(page);
+            this.loadAppointments(patientId, page);
+        }
+    }
+
+    protected readonly totalPages = computed(() =>
+        Math.ceil(this.totalAppointments() / this.appointmentsLimit())
+    );
+
+    protected openCheckIn(): void {
+        this.isCheckInDrawerOpen.set(true);
+    }
+
+    protected onCheckInProcessed(): void {
+        // Recargar datos para ver el cambio de estado en la próxima cita
+        if (this.patient()) {
+            this.loadRelatedData(this.patient()!.id);
+        }
     }
 
     protected toggleSidebar(): void {

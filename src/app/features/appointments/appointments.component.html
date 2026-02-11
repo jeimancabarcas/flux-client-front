@@ -163,8 +163,13 @@
                                                 class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
                                                 Médico Asignado</p>
                                             <p class="text-[11px] font-black text-black leading-none whitespace-normal">
-                                                DR. {{ app.doctor?.detalles?.nombre }} {{ app.doctor?.detalles?.apellido
-                                                }}</p>
+                                                @if (app.doctor?.details?.nombre || app.doctor?.detalles?.nombre) {
+                                                DR. {{ app.doctor?.details?.nombre || app.doctor?.detalles?.nombre }} {{
+                                                app.doctor?.details?.apellido || app.doctor?.detalles?.apellido }}
+                                                } @else {
+                                                {{ app.doctor?.email }}
+                                                }
+                                            </p>
                                         </div>
                                         <div class="pt-3 border-t border-slate-100 flex flex-col gap-2">
                                             <div class="flex justify-between items-center mb-1">
@@ -304,8 +309,14 @@
                                     <span class="text-[8px] font-bold opacity-70 mt-1 truncate">{{ app.reason }}</span>
 
                                     <div class="mt-auto flex justify-between items-center">
-                                        <span class="text-[7px] font-black opacity-40">DR. {{
-                                            app.doctor?.detalles?.nombre }}</span>
+                                        <span class="text-[7px] font-black opacity-40">
+                                            @if (app.doctor?.details?.nombre || app.doctor?.detalles?.nombre) {
+                                            DR. {{ app.doctor?.details?.nombre || app.doctor?.detalles?.nombre }} {{
+                                            app.doctor?.details?.apellido || app.doctor?.detalles?.apellido }}
+                                            } @else {
+                                            {{ app.doctor?.email }}
+                                            }
+                                        </span>
                                         <span class="text-[7px] font-black py-0.5 px-1 rounded bg-black/5">
                                             {{ getDuration(app) }} MIN
                                         </span>
@@ -348,8 +359,14 @@
                                                 <p
                                                     class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
                                                     Médico Asignado</p>
-                                                <p class="text-[11px] font-black text-black leading-none">DR. {{
-                                                    app.doctor?.detalles?.nombre }} {{ app.doctor?.detalles?.apellido }}
+                                                <p class="text-[11px] font-black text-black leading-none">
+                                                    @if (app.doctor?.details?.nombre || app.doctor?.detalles?.nombre) {
+                                                    DR. {{ app.doctor?.details?.nombre || app.doctor?.detalles?.nombre
+                                                    }} {{
+                                                    app.doctor?.details?.apellido || app.doctor?.detalles?.apellido }}
+                                                    } @else {
+                                                    {{ app.doctor?.email }}
+                                                    }
                                                 </p>
                                                 <p class="text-[9px] font-bold text-slate-400 mt-0.5">{{
                                                     app.doctor?.email }}</p>
@@ -379,6 +396,14 @@
                                                     <button (click)="startConsultation(app.id, $event)"
                                                         class="w-full bg-cyan-600 text-white text-[9px] font-black uppercase py-2 hover:bg-cyan-700 transition-all border-b-2 border-cyan-800 active:translate-y-[1px] active:border-b-0 mb-1">
                                                         ⚡ Iniciar Consulta
+                                                    </button>
+                                                    }
+
+                                                    @if (authService.userRole() !== UserRole.MEDICO && app.status ===
+                                                    AppointmentStatus.PENDIENTE) {
+                                                    <button (click)="openCheckIn(app, $event)"
+                                                        class="w-full bg-emerald-600 text-white text-[9px] font-black uppercase py-2 hover:bg-emerald-700 transition-all border-b-2 border-emerald-800 active:translate-y-[1px] active:border-b-0 mb-1">
+                                                        Facturar / Confirmar Ingreso
                                                     </button>
                                                     }
                                                     <div class="flex gap-2">
@@ -601,4 +626,10 @@
             </div>
         </form>
     </app-modal>
+
+    <!-- Check-In Drawer -->
+    <app-check-in-drawer [isOpen]="isCheckInDrawerOpen()" [appointment]="checkInAppointment()"
+        [catalogItems]="catalogItems()" (close)="closeCheckIn()" (process)="onCheckInProcessed()">
+    </app-check-in-drawer>
 </div>
+```

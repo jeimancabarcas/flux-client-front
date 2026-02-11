@@ -77,9 +77,11 @@
     <!-- Modal: Formulario -->
     <app-modal [isOpen]="isFormModalOpen()" (close)="closeModals()"
         [title]="selectedEps() ? 'ACTUALIZAR ENTIDAD EPS' : 'REGISTRAR NUEVA EPS'">
+        @if (isFormModalOpen()) {
         <app-master-form [initialData]="selectedEps()" [isProcessing]="isProcessingAction()"
             (submitted)="handleSubmit($event)">
         </app-master-form>
+        }
     </app-modal>
 
     <!-- Modal: Confirmar Eliminación -->

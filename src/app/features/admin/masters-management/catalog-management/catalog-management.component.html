@@ -119,9 +119,11 @@
     <!-- Modal: Formulario -->
     <app-modal [isOpen]="isFormModalOpen()" (close)="closeModals()"
         [title]="selectedItem() ? 'ACTUALIZAR ÍTEM DEL CATÁLOGO' : 'VINCULAR NUEVO CUPS / CUMS'">
+        @if (isFormModalOpen()) {
         <app-catalog-form [initialData]="selectedItem()" [isProcessing]="isProcessingAction()"
             (submitted)="handleSubmit($event)">
         </app-catalog-form>
+        }
     </app-modal>
 
     <!-- Modal: Confirmar Eliminación -->

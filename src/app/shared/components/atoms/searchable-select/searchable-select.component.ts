@@ -45,17 +45,8 @@ export class SearchableSelectComponent implements ControlValueAccessor {
     protected readonly isDisabled = signal<boolean>(false);
 
     constructor() {
-        // Sincronizar el signal de valor cuando cambia el input 'value' (Modo Standalone)
-        effect(() => {
-            const externalValue = this.value();
-            if (externalValue !== undefined) {
-                if (this.multiple()) {
-                    this.selectedValues.set(Array.isArray(externalValue) ? externalValue : [externalValue]);
-                } else {
-                    this.selectedValue.set(typeof externalValue === 'string' ? externalValue : '');
-                }
-            }
-        });
+        // El estado se sincroniza primordialmente vía writeValue (ControlValueAccessor)
+        // o mediante interacción del usuario.
     }
 
     // Computed
@@ -89,9 +80,10 @@ export class SearchableSelectComponent implements ControlValueAccessor {
 
     writeValue(value: any): void {
         if (this.multiple()) {
-            this.selectedValues.set(Array.isArray(value) ? value : []);
+            const val = Array.isArray(value) ? value : (value ? [value] : []);
+            this.selectedValues.set(val);
         } else {
-            this.selectedValue.set(value || '');
+            this.selectedValue.set(value ? String(value) : '');
         }
     }
 

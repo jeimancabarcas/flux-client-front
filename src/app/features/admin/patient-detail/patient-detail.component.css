@@ -33,3 +33,36 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+/* Skeleton Animations */
+@keyframes shimmer {
+    0% {
+        background-position: -468px 0;
+    }
+
+    100% {
+        background-position: 468px 0;
+    }
+}
+
+.animate-shimmer {
+    background: linear-gradient(to right, #f8fafc 8%, #f1f5f9 18%, #f8fafc 33%);
+    background-size: 800px 104px;
+    animation: shimmer 2s linear infinite forwards;
+}
+
+@keyframes pulse-slow {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

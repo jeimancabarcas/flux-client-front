@@ -100,4 +100,18 @@ export class AppointmentService {
     deleteAppointment(id: string): Observable<GenericApiResponse<void>> {
         return this.http.delete<GenericApiResponse<void>>(`${this.apiUrl}/${id}`);
     }
+
+    /**
+     * Confirmar asistencia y generar factura
+     */
+    confirmAppointment(id: string, itemIds: string[]): Observable<GenericApiResponse<void>> {
+        return this.http.patch<GenericApiResponse<void>>(`${this.apiUrl}/${id}/confirm`, { itemIds });
+    }
+
+    /**
+     * Obtener el historial de citas paginado de un paciente
+     */
+    getPatientAppointmentHistory(patientId: string, page: number = 1, limit: number = 10): Observable<GenericApiResponse<{ data: Appointment[]; total: number }>> {
+        return this.http.get<GenericApiResponse<{ data: Appointment[]; total: number }>>(`${this.apiUrl}/patient/${patientId}?page=${page}&limit=${limit}`);
+    }
 }

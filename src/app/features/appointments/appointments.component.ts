@@ -12,18 +12,21 @@ import { SidebarComponent } from '../../shared/components/organisms/sidebar/side
 import { ModalComponent } from '../../shared/components/molecules/modal/modal.component';
 import { SearchableSelectComponent, SearchableOption } from '../../shared/components/atoms/searchable-select/searchable-select.component';
 import { DateSelectorComponent } from '../../shared/components/molecules/date-selector/date-selector.component';
+import { CheckInDrawerComponent } from './components/check-in-drawer/check-in-drawer.component';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { HostListener } from '@angular/core';
 import { MastersService } from '../../core/services/masters.service';
 import { CatalogItem } from '../../core/models/masters.model';
 
 @Component({
     selector: 'app-appointments',
-    imports: [CommonModule, SidebarComponent, ModalComponent, ReactiveFormsModule, FormsModule, SearchableSelectComponent, DateSelectorComponent],
+    imports: [CommonModule, SidebarComponent, ModalComponent, ReactiveFormsModule, FormsModule, SearchableSelectComponent, DateSelectorComponent, CheckInDrawerComponent],
     templateUrl: './appointments.component.html',
     styleUrl: './appointments.component.css',
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: {
+        '(document:click)': 'onClickOutside($event)'
+    }
 })
 export class AppointmentsComponent implements OnInit {
     private readonly appointmentService = inject(AppointmentService);
@@ -64,6 +67,10 @@ export class AppointmentsComponent implements OnInit {
     protected readonly selectedAppointment = signal<Appointment | null>(null);
     protected readonly activeTooltipId = signal<string | null>(null);
     protected appointmentForm!: FormGroup;
+
+    // Check-In Drawer State
+    protected readonly isCheckInDrawerOpen = signal(false);
+    protected readonly checkInAppointment = signal<Appointment | null>(null);
 
     // Patient Search
     protected readonly patients = signal<Patient[]>([]);
@@ -285,7 +292,6 @@ export class AppointmentsComponent implements OnInit {
         this.isSidebarOpen.update(v => !v);
     }
 
-    @HostListener('document:click', ['$event'])
     protected onClickOutside(event: MouseEvent): void {
         const target = event.target as HTMLElement;
         if (!target.closest('.group\\/card')) {
@@ -388,6 +394,28 @@ export class AppointmentsComponent implements OnInit {
             },
             error: () => this.isLoading.set(false)
         });
+    }
+
+    // Check-In Methods
+    protected openCheckIn(app: Appointment, event: MouseEvent): void {
+        event.stopPropagation();
+        this.activeTooltipId.set(null); // Close tooltip
+        this.checkInAppointment.set(app);
+
+        // Small timeout to ensure tooltip closes and z-index doesn't conflict immediately
+        setTimeout(() => {
+            this.isCheckInDrawerOpen.set(true);
+        }, 50);
+    }
+
+    protected closeCheckIn(): void {
+        this.isCheckInDrawerOpen.set(false);
+        this.checkInAppointment.set(null);
+    }
+
+    protected onCheckInProcessed(): void {
+        this.loadAppointments(); // Recargar citas para ver el cambio de estado
+        this.isCheckInDrawerOpen.set(false);
     }
 
     // Patient Management

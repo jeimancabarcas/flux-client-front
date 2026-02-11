@@ -82,8 +82,10 @@
     <app-modal [isOpen]="isFormModalOpen()"
         [title]="selectedSpecialty() ? 'Protocolo / Editar Denominación' : 'Protocolo / Registro de Rama'"
         (close)="closeModals()">
+        @if (isFormModalOpen()) {
         <app-specialty-form [initialData]="selectedSpecialty()" [isLoading]="isProcessingAction()"
             (submitForm)="handleSpecialtySubmit($event)" (cancel)="closeModals()" />
+        }
     </app-modal>
 
     <app-modal [isOpen]="isDeleteModalOpen()" title="Alerta / Revocación de Rama" (close)="closeModals()">

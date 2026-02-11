@@ -68,6 +68,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/masters-management/catalog-management/catalog-management.component').then(m => m.CatalogManagementComponent)
     },
     {
+        path: 'admin/masters/agreements',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/admin/masters-management/agreement-management/agreement-management.component').then(m => m.AgreementManagementComponent)
+    },
+    {
         path: '**',
         redirectTo: 'login'
     }

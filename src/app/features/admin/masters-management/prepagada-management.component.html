@@ -77,9 +77,11 @@
     <!-- Modal: Formulario -->
     <app-modal [isOpen]="isFormModalOpen()" (close)="closeModals()"
         [title]="selectedPrepagada() ? 'ACTUALIZAR PLAN DE SALUD' : 'VINCULAR NUEVA PREPAGADA'">
+        @if (isFormModalOpen()) {
         <app-master-form [initialData]="selectedPrepagada()" [isProcessing]="isProcessingAction()"
             (submitted)="handleSubmit($event)">
         </app-master-form>
+        }
     </app-modal>
 
     <!-- Modal: Confirmar Eliminación -->
