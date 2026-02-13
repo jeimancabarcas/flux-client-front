@@ -53,9 +53,8 @@ export interface ClinicalRecordRDA {
     };
     physicalExamination: string;
 
-    // Diagnósticos, procedimientos y conducta
+    // Diagnósticos y conducta
     diagnoses: Diagnosis[];
-    procedures: Procedure[];
     medications: Medication[];
 
     planAndTreatment: string;

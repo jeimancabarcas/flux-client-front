@@ -1,9 +1,12 @@
-import { Component, OnInit, signal, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, signal, inject, ChangeDetectionStrategy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AppointmentService } from '../../core/services/appointment.service';
-import { RdaService } from '../../core/services/rda.service';
+import { MedicalRecordService } from '../../core/services/medical-record.service';
 import { Appointment, AppointmentStatus } from '../../core/models/appointment.model';
+import { CreateMedicalRecordDto } from '../../core/models/medical-record.model';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { SidebarComponent } from '../../shared/components/organisms/sidebar/sidebar.component';
 import { HistoryLocalComponent } from './components/history-local/history-local.component';
 import { HistoryInteroperableComponent } from './components/history-interoperable/history-interoperable.component';
@@ -63,7 +66,11 @@ import { ClinicalRecordRDA } from '../../core/models/rda.model';
                         <span class="text-[9px] font-black uppercase text-slate-400">ID Paciente</span>
                         <span class="text-xs font-bold text-black">{{ appointment()?.patient?.numeroIdentificacion }}</span>
                     </div>
-                    <button (click)="completeConsultation()" class="px-6 py-2 bg-black text-white text-xs font-black uppercase tracking-widest hover:bg-cyan-600 transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.2)]">
+                    <button 
+                        [disabled]="!isRecordSaved() || isLoading()" 
+                        (click)="completeConsultation()" 
+                        class="px-6 py-2 bg-black text-white text-xs font-black uppercase tracking-widest hover:bg-cyan-600 transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.2)] disabled:opacity-30 disabled:cursor-not-allowed"
+                        [title]="!isRecordSaved() ? 'Debe guardar el registro clínico antes de finalizar' : ''">
                         Finalizar Consulta
                     </button>
                 </div>
@@ -95,15 +102,122 @@ import { ClinicalRecordRDA } from '../../core/models/rda.model';
                             </div>
 
                             <!-- MAIN RDA FORM (The Consultation) -->
-                            <div class="space-y-8">
-                                <h3 class="text-3xl font-black uppercase tracking-tighter mb-4">Registro de Atención (RDA)</h3>
-                                <app-rda-form 
-                                    [patientId]="app.patientId" 
-                                    [appointmentId]="app.id" 
-                                    [doctorId]="app.doctorId"
-                                    [initialItemIds]="app.itemIds || []"
-                                    (save)="onSaveRda($event)" />
-                            </div>
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-3xl font-black uppercase tracking-tighter">Registro de Atención (RDA)</h3>
+                                    
+                                    @if (isRecordSaved() && !isCreatingNew()) {
+                                        <button (click)="isCreatingNew.set(true)" 
+                                            class="px-6 py-2 bg-cyan-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-[4px_4px_0px_rgba(0,0,0,0.1)] flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            Nueva Evolución / Registro
+                                        </button>
+                                    } @else if (isCreatingNew()) {
+                                        <button (click)="isCreatingNew.set(false)" 
+                                            class="px-6 py-2 bg-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-widest hover:bg-slate-300 transition-all flex items-center gap-2">
+                                            Cancelar y Ver Guardados
+                                        </button>
+                                    }
+                                </div>
+
+                                <!-- SESSION TIMELINE / NAVIGATOR -->
+                                @if (savedRecords().length > 0) {
+                                    <div class="space-y-4 mb-8">
+                                        <div class="flex items-center gap-3">
+                                            <div class="h-[2px] flex-1 bg-slate-200"></div>
+                                            <span class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Línea de Tiempo de esta Sesión</span>
+                                            <div class="h-[2px] flex-1 bg-slate-200"></div>
+                                        </div>
+
+                                        <div class="flex gap-3 overflow-x-auto pb-4 custom-scrollbar">
+                                            @for (record of savedRecords(); track record.id; let i = $index) {
+                                                <div 
+                                                    (click)="activeRecordIndex.set(i); isCreatingNew.set(false)"
+                                                    [class.border-black]="activeRecordIndex() === i && !isCreatingNew()"
+                                                    [class.bg-black]="activeRecordIndex() === i && !isCreatingNew()"
+                                                    [class.text-white]="activeRecordIndex() === i && !isCreatingNew()"
+                                                    [class.border-slate-200]="activeRecordIndex() !== i || isCreatingNew()"
+                                                    [class.bg-white]="activeRecordIndex() !== i || isCreatingNew()"
+                                                    class="min-w-[200px] p-4 border-2 cursor-pointer transition-all hover:border-black group animate-enter">
+                                                    <div class="flex justify-between items-start mb-2">
+                                                        <span class="text-[9px] font-black uppercase tracking-widest"
+                                                            [class.text-slate-400]="activeRecordIndex() !== i || isCreatingNew()">
+                                                            Registro #{{ savedRecords().length - i }}
+                                                        </span>
+                                                        <span class="text-[9px] font-bold"
+                                                            [class.text-slate-300]="activeRecordIndex() !== i || isCreatingNew()">
+                                                            {{ record.createdAt | date:'HH:mm' }}
+                                                        </span>
+                                                    </div>
+                                                    <h5 class="text-[11px] font-black uppercase line-clamp-1 mb-1">{{ record.reason }}</h5>
+                                                    <div class="flex gap-1">
+                                                        @for (diag of record.diagnoses?.slice(0, 2); track diag) {
+                                                            <span class="text-[8px] font-bold px-1 py-0.5 bg-slate-100 text-slate-500 rounded-sm">Dx: {{ diag }}</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                            
+                                            <!-- "New Record" placeholder if not creating -->
+                                            @if (!isCreatingNew()) {
+                                                <div 
+                                                    (click)="isCreatingNew.set(true)"
+                                                    class="min-w-[200px] p-4 border-2 border-dashed border-slate-300 bg-slate-50/50 cursor-pointer hover:border-cyan-500 hover:bg-cyan-50 transition-all flex flex-col items-center justify-center gap-2 group">
+                                                    <div class="w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center group-hover:border-cyan-500 group-hover:bg-cyan-500 group-hover:text-white transition-all text-slate-400">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                                        </svg>
+                                                    </div>
+                                                    <span class="text-[9px] font-black uppercase tracking-widest text-slate-400 group-hover:text-cyan-600">Nueva Evolución</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+
+                                <!-- FORM AREA -->
+                                @if (isCreatingNew()) {
+                                    <div class="animate-enter">
+                                        <div class="flex items-center gap-4 mb-8">
+                                            <div class="w-10 h-10 bg-cyan-600 text-white flex items-center justify-center font-black">NEW</div>
+                                            <div>
+                                                <h4 class="text-xl font-black uppercase tracking-tighter">Nueva Evolución Clínica</h4>
+                                                <p class="text-[10px] font-bold text-slate-400 uppercase">Añadiendo información adicional a la consulta actual</p>
+                                            </div>
+                                        </div>
+
+                                        <app-rda-form 
+                                            [patientId]="app.patientId" 
+                                            [appointmentId]="app.id" 
+                                            [doctorId]="app.doctorId"
+                                            [initialItemIds]="app.itemIds || []"
+                                            [isReadOnly]="false"
+                                            [initialData]="lastRecordBackgroundOnly()"
+                                            (save)="onSaveRda($event)" />
+                                    </div>
+                                } @else {
+                                    <div class="animate-enter">
+                                        @if (savedRecords().length > 0) {
+                                            <div class="flex items-center gap-4 mb-8">
+                                                <div class="w-10 h-10 bg-black text-white flex items-center justify-center font-black">#{{ savedRecords().length - activeRecordIndex() }}</div>
+                                                <div>
+                                                    <h4 class="text-xl font-black uppercase tracking-tighter">Resumen del Registro Guardado</h4>
+                                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Registrado a las {{ savedRecords()[activeRecordIndex()].createdAt | date:'HH:mm:ss' }} - Modo Solo Lectura</p>
+                                                </div>
+                                            </div>
+                                        }
+
+                                        <app-rda-form 
+                                            [patientId]="app.patientId" 
+                                            [appointmentId]="app.id" 
+                                            [doctorId]="app.doctorId"
+                                            [initialItemIds]="app.itemIds || []"
+                                            [isReadOnly]="isRecordSaved()"
+                                            [initialData]="savedRecords()[activeRecordIndex()]"
+                                            (save)="onSaveRda($event)" />
+                                    </div>
+                                }
                         </div>
                     }
                 </div>
@@ -204,13 +318,26 @@ export class ConsultationComponent implements OnInit {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly appointmentService = inject(AppointmentService);
-    private readonly rdaService = inject(RdaService);
+    private readonly medicalRecordService = inject(MedicalRecordService);
 
     protected readonly appointmentId = signal<string | null>(null);
     protected readonly appointment = signal<Appointment | null>(null);
     protected readonly isLoading = signal(true);
     protected readonly isSidebarOpen = signal(false);
     protected readonly activeResource = signal<'local' | 'interop' | null>(null);
+    protected readonly isRecordSaved = signal(false);
+    protected readonly savedRecords = signal<any[]>([]);
+    protected readonly isCreatingNew = signal(false);
+    protected readonly activeRecordIndex = signal<number>(0);
+
+    protected readonly lastRecordBackgroundOnly = computed(() => {
+        const records = this.savedRecords();
+        if (records.length === 0) return null;
+        // Solo retornamos los antecedentes del último registro para pre-poblar el nuevo
+        return {
+            patientBackground: records[0].patientBackground
+        };
+    });
 
     openResource(type: 'local' | 'interop'): void {
         this.activeResource.set(type);
@@ -232,13 +359,26 @@ export class ConsultationComponent implements OnInit {
 
     private loadAppointmentDetails(id: string): void {
         this.isLoading.set(true);
-        this.appointmentService.getAppointmentById(id).subscribe({
-            next: (res) => {
-                if (res.success && res.data) {
-                    this.appointment.set(res.data);
-                    if (res.data.status === AppointmentStatus.PENDIENTE || res.data.status === AppointmentStatus.CONFIRMADA) {
+
+        const appointment$ = this.appointmentService.getAppointmentById(id);
+        const medicalRecord$ = this.medicalRecordService.getRecordByAppointment(id).pipe(
+            catchError(() => of({ success: false, data: null }))
+        );
+
+        forkJoin([appointment$, medicalRecord$]).subscribe({
+            next: ([appRes, mrRes]) => {
+                if (appRes.success && appRes.data) {
+                    this.appointment.set(appRes.data);
+                    if (appRes.data.status === AppointmentStatus.PENDIENTE || appRes.data.status === AppointmentStatus.CONFIRMADA) {
                         this.updateStatus(id);
                     }
+                }
+                if (mrRes.success && mrRes.data) {
+                    console.log('Historias clínicas para esta cita:', mrRes.data);
+                    const records = Array.isArray(mrRes.data) ? mrRes.data : [mrRes.data];
+                    this.savedRecords.set(records.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+                    this.isRecordSaved.set(true);
+                    this.activeRecordIndex.set(0);
                 }
                 this.isLoading.set(false);
             },
@@ -259,13 +399,40 @@ export class ConsultationComponent implements OnInit {
         });
     }
 
-    protected onSaveRda(rda: ClinicalRecordRDA): void {
+    protected onSaveRda(rdaData: any): void {
         this.isLoading.set(true);
-        this.rdaService.createRda(rda).subscribe({
+
+        // Registrar Historia Clínica (Nuevo Endpoint Estándar)
+        const medicalRecordDto: CreateMedicalRecordDto = {
+            appointmentId: rdaData.appointmentId,
+            patientId: rdaData.patientId,
+            reason: rdaData.reasonForConsultation,
+            currentIllness: rdaData.currentIllness,
+            physicalExamination: {
+                content: rdaData.physicalExamination,
+                heartRate: rdaData.vitalSigns?.heartRate,
+                respiratoryRate: rdaData.vitalSigns?.respiratoryRate,
+                temperature: rdaData.vitalSigns?.temperature,
+                systolicBloodPressure: rdaData.vitalSigns?.systolicBloodPressure,
+                diastolicBloodPressure: rdaData.vitalSigns?.diastolicBloodPressure,
+                weight: rdaData.vitalSigns?.weight,
+                height: rdaData.vitalSigns?.height
+            },
+            diagnoses: rdaData.diagnoses?.map((d: any) => d.code) || ['Z00.0'],
+            plan: rdaData.planAndTreatment,
+            pediatricExtension: rdaData.pediatricExtension,
+            patientBackground: rdaData.patientBackground
+        };
+
+        this.medicalRecordService.registerMedicalRecord(medicalRecordDto).subscribe({
             next: (res) => {
                 if (res.success) {
-                    // Solo informar éxito por ahora, el cierre es manual
-                    console.log('RDA guardado exitosamente');
+                    console.log('Atención registrada exitosamente');
+                    const newRecords = [res.data, ...this.savedRecords()];
+                    this.savedRecords.set(newRecords);
+                    this.isRecordSaved.set(true);
+                    this.isCreatingNew.set(false);
+                    this.activeRecordIndex.set(0);
                 }
                 this.isLoading.set(false);
             },

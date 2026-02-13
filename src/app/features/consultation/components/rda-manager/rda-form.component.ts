@@ -1,18 +1,36 @@
-import { Component, OnInit, signal, inject, input, output, ChangeDetectionStrategy, computed } from '@angular/core';
+import { Component, OnInit, signal, inject, Input, output, ChangeDetectionStrategy, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormArray } from '@angular/forms';
-import { ClinicalRecordRDA, RdaType } from '../../../../core/models/rda.model';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators, FormArray } from '@angular/forms';
+import {
+    ClinicalRecordRDA,
+    RdaType
+} from '../../../../core/models/rda.model';
+import {
+    PatientBackground,
+    PediatricExtension
+} from '../../../../core/models/medical-record.model';
 import { CardComponent } from '../../../../shared/components/atoms/card/card.component';
-import { SearchableSelectComponent, SearchableOption } from '../../../../shared/components/atoms/searchable-select/searchable-select.component';
-import { CatalogItem } from '../../../../core/models/masters.model';
-import { MastersService } from '../../../../core/services/masters.service';
 
 @Component({
     selector: 'app-rda-form',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, CardComponent, SearchableSelectComponent],
+    imports: [CommonModule, ReactiveFormsModule, FormsModule, CardComponent],
     template: `
-    <div class="space-y-12 pb-20">
+    <div class="space-y-12 pb-20 relative" [class.is-read-only]="isReadOnly">
+        @if (isReadOnly) {
+            <div class="watermark">FINALIZADO</div>
+            <div class="sticky top-24 z-50 animate-enter">
+                <div class="bg-emerald-500 text-white p-4 shadow-[8px_8px_0px_rgba(16,185,129,0.2)] flex items-center justify-between border-2 border-black">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="text-sm font-black uppercase tracking-widest">Atención Guardada Correctamente - Modo Lectura</span>
+                    </div>
+                </div>
+            </div>
+        }
+
         <form [formGroup]="rdaForm" class="space-y-12">
             
             <!-- Section 1: Clinical Narrative -->
@@ -21,198 +39,328 @@ import { MastersService } from '../../../../core/services/masters.service';
                     <span class="text-xl font-black text-white bg-black px-3 py-1">01</span>
                     <h4 class="text-xl font-black uppercase tracking-tighter">Narrativa Clínica</h4>
                 </div>
-                
+
                 <div class="grid grid-cols-1 gap-8">
                     <div class="flex flex-col gap-2">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Motivo de Consulta</label>
                         <textarea formControlName="reasonForConsultation" rows="3" 
-                            class="p-4 border-2 border-black focus:border-cyan-500 outline-none transition-all resize-none font-medium text-sm"
+                            class="p-4 border-2 outline-none transition-all resize-none font-medium text-sm"
+                            [class.border-black]="!rdaForm.get('reasonForConsultation')?.invalid || !rdaForm.get('reasonForConsultation')?.touched"
+                            [class.border-red-500]="rdaForm.get('reasonForConsultation')?.invalid && rdaForm.get('reasonForConsultation')?.touched"
                             placeholder="Describa el motivo principal..."></textarea>
+                        @if (rdaForm.get('reasonForConsultation')?.invalid && rdaForm.get('reasonForConsultation')?.touched) {
+                            <span class="text-[9px] font-bold text-red-500 uppercase tracking-tight">{{ getFieldError('reasonForConsultation') }}</span>
+                        }
                     </div>
 
                     <div class="flex flex-col gap-2">
                         <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Enfermedad Actual</label>
                         <textarea formControlName="currentIllness" rows="5" 
-                            class="p-4 border-2 border-black focus:border-cyan-500 outline-none transition-all resize-none font-medium text-sm"
+                            class="p-4 border-2 outline-none transition-all resize-none font-medium text-sm"
+                            [class.border-black]="!rdaForm.get('currentIllness')?.invalid || !rdaForm.get('currentIllness')?.touched"
+                            [class.border-red-500]="rdaForm.get('currentIllness')?.invalid && rdaForm.get('currentIllness')?.touched"
+                            [class.focus:border-cyan-500]="!rdaForm.get('currentIllness')?.invalid"
                             placeholder="Cronología y detalles de la sintomatología..."></textarea>
+                        @if (rdaForm.get('currentIllness')?.invalid && rdaForm.get('currentIllness')?.touched) {
+                            <span class="text-[9px] font-bold text-red-500 uppercase tracking-tight">{{ getFieldError('currentIllness') }}</span>
+                        }
                     </div>
                 </div>
             </app-card>
 
-            <!-- Section 2: Physical Exam & Vitals -->
+            <!-- Section 2: Patient Background & Review of Systems -->
             <app-card customClass="p-10 space-y-8">
                 <div class="flex items-center gap-4">
                     <span class="text-xl font-black text-white bg-black px-3 py-1">02</span>
-                    <h4 class="text-xl font-black uppercase tracking-tighter">Examen Físico y Signos Vitales</h4>
-                </div>
-                
-                <div formGroupName="vitalSigns" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <div class="flex flex-col gap-2">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Tensión Art. (mmHg)</label>
-                        <input type="text" formControlName="bloodPressure" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Frec. Cardiaca (LPM)</label>
-                        <input type="number" formControlName="heartRate" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Frec. Resp. (RPM)</label>
-                        <input type="number" formControlName="respiratoryRate" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Temperatura (°C)</label>
-                        <input type="number" step="0.1" formControlName="temperature" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Peso (kg)</label>
-                        <input type="number" step="0.1" formControlName="weight" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center">
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Talla (cm)</label>
-                        <input type="number" formControlName="height" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center">
-                    </div>
+                    <h4 class="text-xl font-black uppercase tracking-tighter">Antecedentes y Revisión por Sistemas</h4>
                 </div>
 
-                <div class="flex flex-col gap-2">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Hallazgos Examen Físico</label>
-                    <textarea formControlName="physicalExamination" rows="4" 
-                        class="p-4 border-2 border-black focus:border-cyan-500 outline-none transition-all resize-none font-medium text-sm"
-                        placeholder="Descripción detallada por sistemas..."></textarea>
+                <div formGroupName="patientBackground" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Patológicos</label>
+                        <textarea formControlName="pathological" rows="2" class="p-4 border-2 border-black outline-none transition-all resize-none font-medium text-sm" placeholder="Enfermedades previas..."></textarea>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Quirúrgicos</label>
+                        <textarea formControlName="surgical" rows="2" class="p-4 border-2 border-black outline-none transition-all resize-none font-medium text-sm" placeholder="Cirugías previas..."></textarea>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-red-500">Alérgicos</label>
+                        <textarea formControlName="allergic" rows="2" class="p-4 border-2 border-black focus:border-red-500 outline-none transition-all resize-none font-bold text-sm" placeholder="Medicamentos, alimentos, etc..."></textarea>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Farmacológicos</label>
+                        <textarea formControlName="pharmacological" rows="2" class="p-4 border-2 border-black outline-none transition-all resize-none font-medium text-sm" placeholder="Medicamentos actuales..."></textarea>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Familiares</label>
+                        <textarea formControlName="familyHistory" rows="2" class="p-4 border-2 border-black outline-none transition-all resize-none font-medium text-sm" placeholder="Antecedentes familiares relevantes..."></textarea>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-cyan-600">Revisión por Sistemas</label>
+                        <textarea formControlName="reviewOfSystems" rows="2" class="p-4 border-2 border-black focus:border-cyan-600 outline-none transition-all resize-none font-medium text-sm" placeholder="Otros síntomas por sistemas..."></textarea>
+                    </div>
                 </div>
             </app-card>
 
-            <!-- Section 3: Diagnoses -->
+            <!-- Section 3: Physical Exam & Vitals -->
             <app-card customClass="p-10 space-y-8">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
                         <span class="text-xl font-black text-white bg-black px-3 py-1">03</span>
-                        <h4 class="text-xl font-black uppercase tracking-tighter">Diagnósticos (CIE-10)</h4>
+                        <h4 class="text-xl font-black uppercase tracking-tighter">Examen Físico y Signos Vitales</h4>
                     </div>
-                    <button type="button" (click)="addDiagnosis()" class="text-[10px] font-black uppercase border-b-2 border-black hover:text-cyan-600 transition-all">+ Agregar Diagnóstico</button>
+                    @if (!isReadOnly) {
+                        <div class="flex items-center gap-2">
+                             <input type="checkbox" id="noTa" [formControl]="$any(rdaForm.get('vitalSigns.isTaNotTaken'))" class="w-4 h-4 accent-black">
+                             <label for="noTa" class="text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-pointer">TA No Tomada</label>
+                        </div>
+                    }
                 </div>
                 
+                <div formGroupName="vitalSigns" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+                    <div class="flex flex-col gap-2 col-span-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Tensión Arterial (Sist/Diast)</label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" formControlName="systolicBloodPressure" 
+                                [attr.disabled]="rdaForm.get('vitalSigns.isTaNotTaken')?.value ? true : null"
+                                class="w-1/2 p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center text-xs placeholder:font-medium"
+                                placeholder="Sist">
+                            <span class="font-black">/</span>
+                            <input type="number" formControlName="diastolicBloodPressure" 
+                                [attr.disabled]="rdaForm.get('vitalSigns.isTaNotTaken')?.value ? true : null"
+                                class="w-1/2 p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center text-xs placeholder:font-medium"
+                                placeholder="Diast">
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Frecuencia Cardíaca (FC)</label>
+                        <input type="number" formControlName="heartRate" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center text-xs" placeholder="LPM">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Frecuencia Respiratoria (FR)</label>
+                        <input type="number" formControlName="respiratoryRate" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center text-xs" placeholder="RPM">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Temperatura</label>
+                        <input type="number" step="0.1" formControlName="temperature" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center text-xs" placeholder="°C">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Peso (kg)</label>
+                        <input type="number" step="0.1" formControlName="weight" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center text-xs" placeholder="kg">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[9px] font-black uppercase tracking-widest text-slate-400">Talla (cm)</label>
+                        <input type="number" formControlName="height" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold text-center text-xs" placeholder="cm">
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Descripción de hallazgos</label>
+                    <textarea formControlName="physicalExamination" rows="4" 
+                        class="p-4 border-2 outline-none transition-all resize-none font-medium text-sm"
+                        [class.border-black]="!rdaForm.get('physicalExamination')?.invalid || !rdaForm.get('physicalExamination')?.touched"
+                        [class.border-red-500]="rdaForm.get('physicalExamination')?.invalid && rdaForm.get('physicalExamination')?.touched"
+                        [class.focus:border-cyan-500]="!rdaForm.get('physicalExamination')?.invalid"
+                        placeholder="Descripción detallada de los hallazgos encontrados durante el examen físico por sistemas..."></textarea>
+                    @if (rdaForm.get('physicalExamination')?.invalid && rdaForm.get('physicalExamination')?.touched) {
+                        <span class="text-[9px] font-bold text-red-500 uppercase tracking-tight">{{ getFieldError('physicalExamination') }}</span>
+                    }
+                </div>
+            </app-card>
+
+            <!-- Section 4: Diagnoses -->
+            <app-card customClass="p-10 space-y-8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <span class="text-xl font-black text-white bg-black px-3 py-1">04</span>
+                        <h4 class="text-xl font-black uppercase tracking-tighter">Diagnósticos (CIE-10)</h4>
+                    </div>
+                    @if (!isReadOnly) {
+                        <button type="button" (click)="addDiagnosis()" class="text-[10px] font-black uppercase tracking-widest px-4 py-2 border-2 border-black hover:bg-black hover:text-white transition-all">
+                            + Agregar Diagnóstico
+                        </button>
+                    }
+                </div>
+
                 <div formArrayName="diagnoses" class="space-y-4">
                     @for (diag of diagnoses.controls; track diag; let i = $index) {
-                        <div [formGroupName]="i" class="flex gap-4 items-end animate-enter">
-                            <div class="w-24">
-                                <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Código</label>
-                                <input type="text" formControlName="code" class="w-full p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold uppercase">
+                        <div [formGroupName]="i" class="grid grid-cols-1 md:grid-cols-12 gap-4 p-6 bg-slate-50 border-2 border-black group/item animate-enter">
+                            <div class="md:col-span-2">
+                                <label class="text-[9px] font-black uppercase text-slate-400">Código</label>
+                                <input type="text" formControlName="code" 
+                                    class="w-full p-2 border-2 outline-none font-bold uppercase transition-all" 
+                                    [class.border-black]="!diag.get('code')?.invalid || !diag.get('code')?.touched"
+                                    [class.border-red-500]="diag.get('code')?.invalid && diag.get('code')?.touched"
+                                    placeholder="Ej: J00">
+                                @if (diag.get('code')?.invalid && diag.get('code')?.touched) {
+                                    <span class="text-[8px] font-bold text-red-500 uppercase">Formato Inválido</span>
+                                }
                             </div>
-                            <div class="flex-1">
-                                <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Descripción</label>
-                                <input type="text" formControlName="description" class="w-full p-3 border-2 border-black focus:border-cyan-500 outline-none font-medium">
+                            <div class="md:col-span-7">
+                                <label class="text-[9px] font-black uppercase text-slate-400">Descripción</label>
+                                <input type="text" formControlName="description" 
+                                    class="w-full p-2 border-2 outline-none font-medium text-sm transition-all" 
+                                    [class.border-black]="!diag.get('description')?.invalid || !diag.get('description')?.touched"
+                                    [class.border-red-500]="diag.get('description')?.invalid && diag.get('description')?.touched"
+                                    placeholder="Nombre de la patología...">
+                                @if (diag.get('description')?.invalid && diag.get('description')?.touched) {
+                                    <span class="text-[8px] font-bold text-red-500 uppercase">Requerido</span>
+                                }
                             </div>
-                            <div class="w-40">
-                                <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Tipo</label>
-                                <select formControlName="type" class="w-full p-3 border-2 border-black focus:border-cyan-500 outline-none font-black uppercase text-[10px]">
+                            <div class="md:col-span-2">
+                                <label class="text-[9px] font-black uppercase text-slate-400">Tipo</label>
+                                <select formControlName="type" class="w-full p-2.5 border-2 border-black focus:border-black outline-none font-bold text-xs">
                                     <option value="PRINCIPAL">PRINCIPAL</option>
                                     <option value="RELACIONADO">RELACIONADO</option>
-                                    <option value="COMPLICACION">COMPLICACION</option>
                                 </select>
                             </div>
-                            <button type="button" (click)="removeDiagnosis(i)" class="p-3 text-red-500 hover:bg-black hover:text-white transition-all border-2 border-transparent hover:border-black">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
+                            <div class="md:col-span-1 flex items-end justify-center pb-1">
+                                @if (!isReadOnly && diagnoses.length > 1) {
+                                    <button type="button" (click)="removeDiagnosis(i)" class="p-2 text-slate-400 hover:text-red-600 transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                }
+                            </div>
                         </div>
                     }
                 </div>
             </app-card>
 
-            <!-- Section 4: Treatment & Conclusions -->
+            <!-- Section 5: Treatment & Plan -->
             <app-card customClass="p-10 space-y-8">
                 <div class="flex items-center gap-4">
-                    <span class="text-xl font-black text-white bg-black px-3 py-1">04</span>
-                    <h4 class="text-xl font-black uppercase tracking-tighter">Plan, Manejo y Conducta</h4>
+                    <span class="text-xl font-black text-white bg-black px-3 py-1">05</span>
+                    <h4 class="text-xl font-black uppercase tracking-tighter">Plan de Manejo y Recomendaciones</h4>
                 </div>
-                
+
                 <div class="grid grid-cols-1 gap-8">
                     <div class="flex flex-col gap-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Plan Curativo y Tratamiento</label>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Tratamiento y Plan</label>
                         <textarea formControlName="planAndTreatment" rows="4" 
-                            class="p-4 border-2 border-black focus:border-cyan-500 outline-none transition-all resize-none font-medium text-sm"
-                            placeholder="Describa el plan farmacológico y no farmacológico..."></textarea>
+                            class="p-4 border-2 outline-none transition-all resize-none font-medium text-sm"
+                            [class.border-black]="!rdaForm.get('planAndTreatment')?.invalid || !rdaForm.get('planAndTreatment')?.touched"
+                            [class.border-red-500]="rdaForm.get('planAndTreatment')?.invalid && rdaForm.get('planAndTreatment')?.touched"
+                            [class.focus:border-cyan-500]="!rdaForm.get('planAndTreatment')?.invalid"
+                            placeholder="Describa el plan terapéutico a seguir..."></textarea>
+                        @if (rdaForm.get('planAndTreatment')?.invalid && rdaForm.get('planAndTreatment')?.touched) {
+                            <span class="text-[9px] font-bold text-red-500 uppercase tracking-tight">{{ getFieldError('planAndTreatment') }}</span>
+                        }
                     </div>
 
                     <div class="flex flex-col gap-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Recomendaciones e Instrucciones</label>
+                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Recomendaciones al Paciente</label>
                         <textarea formControlName="recommendations" rows="3" 
-                            class="p-4 border-2 border-black focus:border-cyan-500 outline-none transition-all resize-none font-medium text-sm"
-                            placeholder="Indicaciones para el paciente..."></textarea>
-                    </div>
-                </div>
-            </app-card>
-
-            <!-- Section 5: Procedures & Charges (CUPS/CUMS) -->
-            <app-card customClass="p-10 space-y-8">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <span class="text-xl font-black text-white bg-black px-3 py-1">05</span>
-                        <h4 class="text-xl font-black uppercase tracking-tighter">Procedimientos y Cargos (CUPS/CUMS)</h4>
+                            class="p-4 border-2 outline-none transition-all resize-none font-medium text-sm"
+                            [class.border-black]="!rdaForm.get('recommendations')?.invalid || !rdaForm.get('recommendations')?.touched"
+                            [class.border-red-500]="rdaForm.get('recommendations')?.invalid && rdaForm.get('recommendations')?.touched"
+                            [class.focus:border-cyan-500]="!rdaForm.get('recommendations')?.invalid"
+                            placeholder="Signos de alarma, cuidados en casa..."></textarea>
+                        @if (rdaForm.get('recommendations')?.invalid && rdaForm.get('recommendations')?.touched) {
+                            <span class="text-[9px] font-bold text-red-500 uppercase tracking-tight">{{ getFieldError('recommendations') }}</span>
+                        }
                     </div>
                 </div>
 
-                <div class="space-y-6">
-                    <div class="flex flex-col gap-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-300">Vincular nuevos servicios o productos</label>
-                        <app-searchable-select 
-                            [options]="catalogOptions()" 
-                            [placeholder]="'BUSCAR EN EL CATÁLOGO INSTITUCIONAL...'"
-                            (selectionChange)="onSelectProcedure($any($event))"
-                            (searchChange)="searchCatalog($event)"
-                            [loading]="searchingCatalog()"
-                            [emptyMessage]="'NO SE ENCONTRARON COINCIDENCIAS'">
-                        </app-searchable-select>
-                    </div>
-
-                    <!-- Selected Procedures List -->
-                    <div class="space-y-4">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Procedimientos a Facturar ({{ procedures.length }})</label>
-                        <div class="flex flex-col gap-2">
-                            @for (proc of procedures.controls; track proc; let i = $index) {
-                                <div [formGroupName]="i" class="flex items-center justify-between p-4 bg-slate-50 border-2 border-black group/item animate-enter">
-                                    <div class="flex flex-col gap-1">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[9px] font-black px-1.5 py-0.5 bg-black text-white italic tracking-widest">{{ proc.get('code')?.value }}</span>
-                                            <span class="text-sm font-black text-black uppercase">{{ proc.get('description')?.value }}</span>
-                                        </div>
-                                    </div>
-                                    <button type="button" (click)="removeProcedure(i)" class="p-2 text-slate-400 hover:text-red-600 transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            }
-                            @if (procedures.length === 0) {
-                                <div class="p-8 text-center border-2 border-dashed border-slate-200">
-                                    <p class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No hay procedimientos vinculados a esta atención</p>
-                                </div>
+                <!-- Pediatric Toggle -->
+                <div class="pt-6 border-t-2 border-dashed border-slate-200">
+                    <button type="button" 
+                        (click)="togglePediatric()"
+                        class="flex items-center gap-2 group cursor-pointer">
+                        <div class="w-6 h-6 border-2 border-black flex items-center justify-center transition-all group-hover:bg-black"
+                            [class.bg-black]="showPediatric()">
+                            @if (showPediatric()) {
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                </svg>
                             }
                         </div>
-                    </div>
+                        <span class="text-[10px] font-black uppercase tracking-widest" [class.text-slate-400]="!showPediatric()">Habilitar Extensión Pediátrica</span>
+                    </button>
                 </div>
+
+                @if (showPediatric()) {
+                    <div formGroupName="pediatricExtension" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 pt-6 animate-enter">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[9px] font-black uppercase text-slate-400">Peso (kg)</label>
+                            <input type="number" step="0.1" formControlName="weight" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[9px] font-black uppercase text-slate-400">Talla (cm)</label>
+                            <input type="number" step="0.1" formControlName="height" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[9px] font-black uppercase text-slate-400">Perímetro Cefálico (cm)</label>
+                            <input type="number" step="0.1" formControlName="cephalicPerimeter" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[9px] font-black uppercase text-slate-400">Perímetro Abdominal (cm)</label>
+                            <input type="number" step="0.1" formControlName="abdominalPerimeter" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-bold">
+                        </div>
+                        <div class="flex flex-col gap-2 md:col-span-2 lg:col-span-4">
+                            <label class="text-[9px] font-black uppercase text-slate-400">Antecedentes Perinatales</label>
+                            <textarea formControlName="perinatalHistory" rows="2" class="p-3 border-2 border-black focus:border-cyan-500 outline-none font-medium text-sm" placeholder="Detalles del parto, semanas de gestación, etc..."></textarea>
+                        </div>
+                    </div>
+                }
             </app-card>
 
-            <div class="pt-10 flex justify-end">
-                <button type="submit" 
-                    [disabled]="rdaForm.invalid"
-                    (click)="onSubmit()"
-                    class="px-12 py-4 bg-black text-white text-sm font-black uppercase tracking-[0.2em] hover:bg-cyan-600 transition-all shadow-[8px_8px_0px_rgba(0,173,181,0.3)] disabled:opacity-50 disabled:cursor-not-allowed">
-                    Guardar Registro Digital (RDA)
-                </button>
+            <div class="pt-10 flex flex-col items-end gap-3">
+                @if (isReadOnly) {
+                    <div class="flex items-center gap-3 px-8 py-4 bg-slate-100 border-2 border-black text-slate-500 font-bold uppercase text-xs">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        Registro Finalizado / Inmodificable
+                    </div>
+                } @else {
+                    @if (rdaForm.invalid) {
+                        <div class="flex flex-col items-end gap-1 animate-enter">
+                            <span class="text-[10px] font-bold text-red-500 uppercase">
+                                * Faltan campos obligatorios:
+                            </span>
+                            <div class="flex flex-wrap justify-end gap-2 max-w-md">
+                                @for (field of invalidFields(); track field) {
+                                    <span class="px-2 py-1 bg-red-50 text-red-600 text-[9px] font-black border border-red-200">
+                                        {{ field }}
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+                    <button type="submit" 
+                        [disabled]="rdaForm.invalid"
+                        (click)="onSubmit()"
+                        class="px-12 py-4 bg-black text-white text-sm font-black uppercase tracking-[0.2em] transition-all shadow-[8px_8px_0px_rgba(0,0,0,0.1)] hover:shadow-[8px_8px_0px_rgba(6,182,212,0.3)] disabled:opacity-30 disabled:cursor-not-allowed">
+                        Guardar Registro Digital (RDA)
+                    </button>
+                }
             </div>
         </form>
     </div>
     `,
     styles: [`
-        .animate-enter {
-            animation: enter 0.3s cubic-bezier(0.23, 1, 0.32, 1) both;
+        :host { display: block; }
+        .is-read-only input, .is-read-only textarea, .is-read-only select {
+            background-color: #f8fafc !important;
+            color: #475569 !important;
+            border-color: #000 !important;
+            pointer-events: none !important;
         }
-        @keyframes enter {
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 10rem;
+            font-weight: 900;
+            color: rgba(0,0,0,0.03);
+            pointer-events: none;
+            z-index: 0;
+            white-space: nowrap;
+            text-transform: uppercase;
         }
     `],
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -220,65 +368,103 @@ import { MastersService } from '../../../../core/services/masters.service';
 export class RdaFormComponent implements OnInit {
     private readonly fb = inject(FormBuilder);
 
-    patientId = input.required<string>();
-    appointmentId = input.required<string>();
-    doctorId = input.required<string>();
-    initialItemIds = input<string[]>([]); // Items pre-cargados por recepción
+    @Input({ required: true }) patientId!: string;
+    @Input({ required: true }) appointmentId!: string;
+    @Input({ required: true }) doctorId!: string;
+
+    private _isReadOnly = false;
+    @Input() set isReadOnly(value: boolean) {
+        this._isReadOnly = value;
+        if (value && this.rdaForm) {
+            this.rdaForm.disable({ emitEvent: false });
+        }
+    }
+    get isReadOnly(): boolean { return this._isReadOnly; }
+
+    private _initialData: any = null;
+    @Input() set initialData(value: any) {
+        this._initialData = value;
+        if (value && this.rdaForm) {
+            this.handleExistingData(value);
+        }
+    }
+    get initialData(): any { return this._initialData; }
 
     save = output<ClinicalRecordRDA>();
 
     protected rdaForm!: FormGroup;
+    protected readonly showPediatric = signal(false);
 
-    private readonly mastersService = inject(MastersService);
-    protected readonly catalogItems = signal<CatalogItem[]>([]);
-    protected readonly searchingCatalog = signal(false);
+    // Dictionary for user-friendly field names
+    private readonly fieldLabels: Record<string, string> = {
+        reasonForConsultation: 'Motivo de Consulta',
+        currentIllness: 'Enfermedad Actual',
+        physicalExamination: 'Descripción de Hallazgos',
+        planAndTreatment: 'Tratamiento y Plan',
+        recommendations: 'Recomendaciones',
+        diagnoses: 'Diagnósticos (CIE-10)'
+    };
 
-    protected readonly catalogOptions = computed<SearchableOption[]>(() =>
-        this.catalogItems()
-            .filter(i => i.isActive)
-            .map(i => ({
-                value: i.id,
-                label: i.name,
-                sublabel: `${i.code} | $${i.price.toLocaleString()}`
-            }))
-    );
+    /**
+     * Computed signal that tracks specifically which required fields are invalid
+     */
+    protected readonly invalidFields = signal<string[]>([]);
 
-    ngOnInit(): void {
-        this.initForm();
-        this.loadInitialCatalog();
-    }
-
-    private loadInitialCatalog(): void {
-        this.mastersService.getCatalog().subscribe({
-            next: (res) => {
-                if (res.success) {
-                    this.catalogItems.set(res.data);
-                    // Pre-cargar los items iniciales si existen
-                    const preloadedIds = this.initialItemIds();
-                    if (preloadedIds && preloadedIds.length > 0) {
-                        res.data
-                            .filter(item => preloadedIds.includes(item.id))
-                            .forEach(item => this.addProcedureFromCatalog(item));
-                    }
-                }
+    constructor() {
+        effect(() => {
+            if (this.isReadOnly) {
+                this.rdaForm?.disable({ emitEvent: false });
             }
         });
     }
 
-    protected searchCatalog(term: string): void {
-        if (!term || term.length < 2) return;
-        this.searchingCatalog.set(true);
-        this.mastersService.searchCatalog(term).subscribe({
-            next: (res) => {
-                if (res.success) {
-                    const current = this.catalogItems();
-                    const next = [...current, ...res.data.filter(ni => !current.find(ci => ci.id === ni.id))];
-                    this.catalogItems.set(next);
-                }
-                this.searchingCatalog.set(false);
+    ngOnInit(): void {
+        this.initForm();
+
+        if (this.initialData) {
+            this.handleExistingData(this.initialData);
+        }
+    }
+
+    private handleExistingData(data: any): void {
+        if (!this.rdaForm) return;
+
+        const mappedData = {
+            reasonForConsultation: data.reason,
+            currentIllness: data.currentIllness,
+            physicalExamination: data.physicalExamination?.content || '',
+            vitalSigns: {
+                heartRate: data.physicalExamination?.heartRate,
+                respiratoryRate: data.physicalExamination?.respiratoryRate,
+                temperature: data.physicalExamination?.temperature,
+                systolicBloodPressure: data.physicalExamination?.systolicBloodPressure,
+                diastolicBloodPressure: data.physicalExamination?.diastolicBloodPressure,
+                weight: data.physicalExamination?.weight,
+                height: data.physicalExamination?.height,
+                isTaNotTaken: (data.physicalExamination && !data.physicalExamination.systolicBloodPressure)
             },
-            error: () => this.searchingCatalog.set(false)
-        });
+            planAndTreatment: data.plan,
+            recommendations: data.recommendations || '',
+            pediatricExtension: data.pediatricExtension,
+            patientBackground: data.patientBackground
+        };
+
+        this.rdaForm.patchValue(mappedData);
+
+        if (data.diagnoses && Array.isArray(data.diagnoses)) {
+            this.diagnoses.clear();
+            data.diagnoses.forEach((code: string, index: number) => {
+                this.diagnoses.push(this.fb.group({
+                    code: [code, [Validators.required, Validators.pattern(/^[A-Z][0-9][0-9].*$/)]],
+                    description: ['DIAGNÓSTICO RECUPERADO', Validators.required],
+                    type: [index === 0 ? 'PRINCIPAL' : 'RELACIONADO', Validators.required]
+                }));
+            });
+        }
+
+        if (data.pediatricExtension) {
+            this.showPediatric.set(true);
+        }
     }
 
     private initForm(): void {
@@ -288,53 +474,55 @@ export class RdaFormComponent implements OnInit {
             currentIllness: ['', Validators.required],
             physicalExamination: ['', Validators.required],
             vitalSigns: this.fb.group({
-                bloodPressure: [''],
                 heartRate: [null],
                 respiratoryRate: [null],
                 temperature: [null],
+                systolicBloodPressure: [null],
+                diastolicBloodPressure: [null],
                 weight: [null],
-                height: [null]
+                height: [null],
+                isTaNotTaken: [false]
             }),
             diagnoses: this.fb.array([]),
-            procedures: this.fb.array([]),
             medications: this.fb.array([]),
             planAndTreatment: ['', Validators.required],
-            recommendations: ['', Validators.required]
+            recommendations: ['', Validators.required],
+            pediatricExtension: this.fb.group({
+                weight: [null],
+                height: [null],
+                cephalicPerimeter: [null],
+                abdominalPerimeter: [null],
+                perinatalHistory: ['']
+            }),
+            patientBackground: this.fb.group({
+                pathological: [''],
+                surgical: [''],
+                allergic: [''],
+                pharmacological: [''],
+                familyHistory: [''],
+                reviewOfSystems: ['']
+            })
         });
 
-        // Add initial principal diagnosis
+        // Track changes to update invalid fields list
+        this.rdaForm.statusChanges.subscribe(() => {
+            this.updateInvalidFields();
+        });
+
         this.addDiagnosis();
+        this.updateInvalidFields();
+
+        if (this.initialData) {
+            this.handleExistingData(this.initialData);
+        }
+
+        if (this.isReadOnly) {
+            this.rdaForm.disable({ emitEvent: false });
+        }
     }
 
     get diagnoses() {
         return this.rdaForm.get('diagnoses') as FormArray;
-    }
-
-    get procedures() {
-        return this.rdaForm.get('procedures') as FormArray;
-    }
-
-    onSelectProcedure(id: string): void {
-        const item = this.catalogItems().find(i => i.id === id);
-        if (item) {
-            this.addProcedureFromCatalog(item);
-        }
-    }
-
-    private addProcedureFromCatalog(item: CatalogItem): void {
-        // Evitar duplicados
-        const exists = this.procedures.value.some((p: any) => p.code === item.code);
-        if (exists) return;
-
-        const procGroup = this.fb.group({
-            code: [item.code, Validators.required],
-            description: [item.name, Validators.required]
-        });
-        this.procedures.push(procGroup);
-    }
-
-    removeProcedure(index: number): void {
-        this.procedures.removeAt(index);
     }
 
     addDiagnosis(): void {
@@ -352,15 +540,49 @@ export class RdaFormComponent implements OnInit {
         }
     }
 
+    protected togglePediatric(): void {
+        this.showPediatric.update(v => !v);
+    }
+
     onSubmit(): void {
         if (this.rdaForm.valid) {
+            const formValue = this.rdaForm.value;
+
+            if (!this.showPediatric()) {
+                delete formValue.pediatricExtension;
+            }
+
             const rdaData: ClinicalRecordRDA = {
-                ...this.rdaForm.value,
-                patientId: this.patientId(),
-                appointmentId: this.appointmentId(),
-                doctorId: this.doctorId()
+                ...formValue,
+                patientId: this.patientId,
+                appointmentId: this.appointmentId,
+                doctorId: this.doctorId
             };
             this.save.emit(rdaData);
         }
+    }
+
+    private updateInvalidFields(): void {
+        const invalid: string[] = [];
+        const controls = this.rdaForm.controls;
+
+        Object.keys(controls).forEach(key => {
+            if (controls[key].invalid) {
+                const label = this.fieldLabels[key] || key;
+                invalid.push(label);
+            }
+        });
+
+        this.invalidFields.set(invalid);
+    }
+
+    /**
+     * Helper to get user-friendly error messages
+     */
+    protected getFieldError(controlName: string): string {
+        const control = this.rdaForm.get(controlName);
+        if (control?.hasError('required')) return 'Este campo es obligatorio';
+        if (control?.hasError('pattern')) return 'Formato no válido';
+        return 'Entrada no válida';
     }
 }
