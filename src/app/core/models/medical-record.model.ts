@@ -57,6 +57,7 @@ export interface MedicalRecord {
 export interface MedicalRecordHistoryItem {
     id: string;
     reason: string;
+    currentIllness: string;
     diagnoses: string[];
     createdAt: string;
     pediatricExtension?: PediatricExtension | null;

@@ -26,8 +26,8 @@ export class MedicalRecordService {
     /**
      * Obtener el historial de historias clínicas de un paciente
      */
-    getHistoryByPatient(patientId: string): Observable<ApiResponse<MedicalRecordHistoryItem[]>> {
-        return this.http.get<ApiResponse<MedicalRecordHistoryItem[]>>(`${this.apiUrl}/patient/${patientId}`);
+    getHistoryByPatient(patientId: string, page = 1, limit = 5): Observable<ApiResponse<MedicalRecordHistoryItem[]>> {
+        return this.http.get<ApiResponse<MedicalRecordHistoryItem[]>>(`${this.apiUrl}/patient/${patientId}?page=${page}&limit=${limit}`);
     }
 
     /**

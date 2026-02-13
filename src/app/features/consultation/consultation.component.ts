@@ -191,7 +191,6 @@ import { ClinicalRecordRDA } from '../../core/models/rda.model';
                                             [patientId]="app.patientId" 
                                             [appointmentId]="app.id" 
                                             [doctorId]="app.doctorId"
-                                            [initialItemIds]="app.itemIds || []"
                                             [isReadOnly]="false"
                                             [initialData]="lastRecordBackgroundOnly()"
                                             (save)="onSaveRda($event)" />
@@ -212,7 +211,6 @@ import { ClinicalRecordRDA } from '../../core/models/rda.model';
                                             [patientId]="app.patientId" 
                                             [appointmentId]="app.id" 
                                             [doctorId]="app.doctorId"
-                                            [initialItemIds]="app.itemIds || []"
                                             [isReadOnly]="isRecordSaved()"
                                             [initialData]="savedRecords()[activeRecordIndex()]"
                                             (save)="onSaveRda($event)" />
