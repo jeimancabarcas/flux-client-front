@@ -427,6 +427,7 @@ export class ConsultationComponent implements OnInit {
                 height: rdaData.vitalSigns?.height
             },
             diagnoses: rdaData.diagnoses || [],
+            prescriptions: rdaData.medications || [],
             plan: rdaData.planAndTreatment,
             pediatricExtension: rdaData.pediatricExtension,
             patientBackground: rdaData.patientBackground

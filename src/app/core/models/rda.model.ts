@@ -12,11 +12,12 @@ export interface Diagnosis {
 }
 
 export interface Medication {
+    cum: string;
     name: string;
-    presentation: string;
-    dose: string;
+    dosage: string;
     frequency: string;
     duration: string;
+    instructions?: string;
 }
 
 export interface Procedure {

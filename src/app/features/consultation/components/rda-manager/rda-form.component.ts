@@ -12,11 +12,13 @@ import {
 import { CardComponent } from '../../../../shared/components/atoms/card/card.component';
 import { IcdSelectorComponent } from '../../../../shared/components/molecules/icd-selector/icd-selector.component';
 import { IcdDiagnosis } from '../../../../core/models/icd.model';
+import { MedicationSelectorComponent } from '../../../../shared/components/molecules/medication-selector/medication-selector.component';
+import { Medication } from '../../../../core/models/rda.model';
 
 @Component({
     selector: 'app-rda-form',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, FormsModule, CardComponent, IcdSelectorComponent],
+    imports: [CommonModule, ReactiveFormsModule, FormsModule, CardComponent, IcdSelectorComponent, MedicationSelectorComponent],
     template: `
     <div class="space-y-12 pb-20 relative" [class.is-read-only]="isReadOnly">
         @if (isReadOnly) {
@@ -187,10 +189,27 @@ import { IcdDiagnosis } from '../../../../core/models/icd.model';
                 </div>
             </app-card>
 
-            <!-- Section 5: Treatment & Plan -->
+            <!-- Section 5: Medications -->
             <app-card customClass="p-10 space-y-8">
                 <div class="flex items-center gap-4">
-                    <span class="text-xl font-black text-white bg-black px-3 py-1">05</span>
+                    <span class="text-xl font-black text-white bg-cyan-600 px-3 py-1">05</span>
+                    <h4 class="text-xl font-black uppercase tracking-tighter">Recetario / Medicamentos</h4>
+                </div>
+
+                <div class="space-y-6">
+                    <app-medication-selector
+                        [label]="'Prescripción de medicamentos'"
+                        [isReadOnly]="isReadOnly"
+                        [initialSelection]="initialMedications()"
+                        (selectionChange)="onMedicationSelectionChange($event)"
+                    ></app-medication-selector>
+                </div>
+            </app-card>
+
+            <!-- Section 6: Treatment & Plan -->
+            <app-card customClass="p-10 space-y-8">
+                <div class="flex items-center gap-4">
+                    <span class="text-xl font-black text-white bg-black px-3 py-1">06</span>
                     <h4 class="text-xl font-black uppercase tracking-tighter">Plan de Manejo y Recomendaciones</h4>
                 </div>
 
@@ -353,6 +372,7 @@ export class RdaFormComponent implements OnInit {
     protected rdaForm!: FormGroup;
     protected readonly showPediatric = signal(false);
     protected readonly initialIcdCodes = signal<IcdDiagnosis[]>([]);
+    protected readonly initialMedications = signal<Medication[]>([]);
 
     // Dictionary for user-friendly field names
     private readonly fieldLabels: Record<string, string> = {
@@ -361,7 +381,8 @@ export class RdaFormComponent implements OnInit {
         physicalExamination: 'Descripción de Hallazgos',
         planAndTreatment: 'Tratamiento y Plan',
         recommendations: 'Recomendaciones',
-        diagnoses: 'Diagnósticos (CIE-11)'
+        diagnoses: 'Diagnósticos (CIE-11)',
+        medications: 'Medicamentos'
     };
 
     /**
@@ -431,6 +452,26 @@ export class RdaFormComponent implements OnInit {
             this.initialIcdCodes.set([]);
         }
 
+        if (data.prescriptions && Array.isArray(data.prescriptions)) {
+            this.medications.clear();
+            const initial: Medication[] = [];
+            data.prescriptions.forEach((pres: any) => {
+                initial.push(pres);
+                this.medications.push(this.fb.group({
+                    cum: [pres.cum, Validators.required],
+                    name: [pres.name, Validators.required],
+                    dosage: [pres.dosage, Validators.required],
+                    frequency: [pres.frequency, Validators.required],
+                    duration: [pres.duration, Validators.required],
+                    instructions: [pres.instructions || '']
+                }));
+            });
+            this.initialMedications.set(initial);
+        } else {
+            this.medications.clear();
+            this.initialMedications.set([]);
+        }
+
         if (data.pediatricExtension) {
             this.showPediatric.set(true);
         }
@@ -493,6 +534,10 @@ export class RdaFormComponent implements OnInit {
         return this.rdaForm.get('diagnoses') as FormArray;
     }
 
+    get medications() {
+        return this.rdaForm.get('medications') as FormArray;
+    }
+
     protected onIcdSelectionChange(selection: IcdDiagnosis[]): void {
         this.diagnoses.clear();
         selection.forEach((diag, index) => {
@@ -500,6 +545,21 @@ export class RdaFormComponent implements OnInit {
                 code: [diag.code, Validators.required],
                 description: [diag.description, Validators.required],
                 type: [index === 0 ? 'PRINCIPAL' : 'RELACIONADO', Validators.required]
+            }));
+        });
+        this.rdaForm.markAsDirty();
+    }
+
+    protected onMedicationSelectionChange(selection: Medication[]): void {
+        this.medications.clear();
+        selection.forEach(med => {
+            this.medications.push(this.fb.group({
+                cum: [med.cum, Validators.required],
+                name: [med.name, Validators.required],
+                dosage: [med.dosage, Validators.required],
+                frequency: [med.frequency, Validators.required],
+                duration: [med.duration, Validators.required],
+                instructions: [med.instructions || '']
             }));
         });
         this.rdaForm.markAsDirty();

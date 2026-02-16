@@ -28,6 +28,15 @@ export interface PhysicalExamination {
     height?: number;
 }
 
+export interface Prescription {
+    cum: string;
+    name: string;
+    dosage: string;
+    frequency: string;
+    duration: string;
+    instructions?: string;
+}
+
 export interface CreateMedicalRecordDto {
     appointmentId: string;
     patientId: string;
@@ -35,6 +44,7 @@ export interface CreateMedicalRecordDto {
     currentIllness: string;
     physicalExamination: PhysicalExamination;
     diagnoses: Diagnosis[];
+    prescriptions: Prescription[];
     plan: string;
     pediatricExtension?: PediatricExtension;
     patientBackground?: PatientBackground;
@@ -49,6 +59,7 @@ export interface MedicalRecord {
     currentIllness: string;
     physicalExamination: PhysicalExamination;
     diagnoses: Diagnosis[];
+    prescriptions: Prescription[];
     plan: string;
     pediatricExtension?: PediatricExtension;
     patientBackground?: PatientBackground;
