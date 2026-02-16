@@ -64,12 +64,11 @@ import { CardComponent } from '../../../../shared/components/atoms/card/card.com
                 <div class="space-y-3">
                     <h5 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Impresión Diagnóstica</h5>
                     <div class="space-y-2">
-                        @for (diag of rda().diagnoses; track diag.code) {
+                        @for (diag of rda().diagnoses; track $index) {
                             <div class="flex items-start gap-3 p-3 border border-black bg-white">
-                                <span class="px-2 py-0.5 bg-black text-white text-[9px] font-black inline-block">{{ diag.code }}</span>
+                                <span class="px-2 py-0.5 bg-black text-white text-[9px] font-black inline-block">{{ diag?.code || diag }}</span>
                                 <div class="flex flex-col">
-                                    <span class="text-xs font-bold leading-none mb-1 text-black">{{ diag.description }}</span>
-                                    <span class="text-[8px] font-black uppercase text-cyan-600">{{ diag.type }}</span>
+                                    <span class="text-xs font-bold leading-none text-black">{{ diag?.description || 'Diagnóstico Migrado' }}</span>
                                 </div>
                             </div>
                         }

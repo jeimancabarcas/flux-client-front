@@ -1,3 +1,5 @@
+import { Diagnosis } from './rda.model';
+
 export interface PediatricExtension {
     weight: number;
     height: number;
@@ -32,7 +34,7 @@ export interface CreateMedicalRecordDto {
     reason: string;
     currentIllness: string;
     physicalExamination: PhysicalExamination;
-    diagnoses: string[];
+    diagnoses: Diagnosis[];
     plan: string;
     pediatricExtension?: PediatricExtension;
     patientBackground?: PatientBackground;
@@ -46,7 +48,7 @@ export interface MedicalRecord {
     reason: string;
     currentIllness: string;
     physicalExamination: PhysicalExamination;
-    diagnoses: string[];
+    diagnoses: Diagnosis[];
     plan: string;
     pediatricExtension?: PediatricExtension;
     patientBackground?: PatientBackground;
@@ -56,6 +58,7 @@ export interface MedicalRecord {
 
 export interface MedicalRecordHistoryItem {
     id: string;
+    doctorId?: string;
     reason: string;
     currentIllness: string;
     diagnoses: string[];

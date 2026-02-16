@@ -201,96 +201,31 @@
                                 Citas</span>
                             <div class="h-[1px] flex-1 bg-slate-200"></div>
                         </div>
-                        <div class="overflow-hidden border border-black bg-white">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-slate-50 border-b border-black">
-                                    <tr>
-                                        <th class="px-4 py-3 text-[9px] font-black uppercase tracking-widest">Fecha</th>
-                                        <th class="px-4 py-3 text-[9px] font-black uppercase tracking-widest">
-                                            Especialista</th>
-                                        <th class="px-4 py-3 text-[9px] font-black uppercase tracking-widest">Estado
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    @for (app of appointments(); track app.id) {
-                                    <tr class="hover:bg-slate-50 transition-colors">
-                                        <td class="px-4 py-4 text-[10px] font-bold text-black uppercase">{{
-                                            app.startTime | date:'dd/MM/yyyy HH:mm' }}</td>
-                                        <td class="px-4 py-4 text-[10px] font-bold text-slate-600 uppercase">
-                                            @if (app.doctor?.details?.nombre || app.doctor?.detalles?.nombre) {
-                                            DR. {{ app.doctor?.details?.nombre || app.doctor?.detalles?.nombre }} {{
-                                            app.doctor?.details?.apellido || app.doctor?.detalles?.apellido }}
-                                            } @else {
-                                            {{ app.doctor?.email }}
-                                            }
-                                        </td>
-                                        <td class="px-4 py-4">
-                                            <span
-                                                class="px-2 py-0.5 border text-[8px] font-black uppercase tracking-tighter"
-                                                [class]="getStatusClasses(app.status)">
-                                                {{ app.status }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    } @empty {
-                                    <tr>
-                                        <td colspan="3"
-                                            class="px-4 py-8 text-center text-[10px] font-bold text-slate-400 uppercase italic">
-                                            Sin registros previos.</td>
-                                    </tr>
+                        <app-data-table [headers]="['Fecha', 'Especialista', 'Estado']" [data]="appointments()"
+                            [totalItems]="totalAppointments()" [page]="currentPage()" [limit]="appointmentsLimit()"
+                            [totalPages]="totalPages()" [showTotal]="true" [showLimit]="true"
+                            emptyMessage="Sin registros previos." (pageChange)="onPageChange($event)"
+                            (limitChange)="onLimitChange($event)">
+
+                            <ng-template #rowTemplate let-app>
+                                <td class="px-4 py-4 text-[10px] font-bold text-black uppercase">{{ app.startTime |
+                                    date:'dd/MM/yyyy HH:mm' }}</td>
+                                <td class="px-4 py-4 text-[10px] font-bold text-slate-600 uppercase">
+                                    @if (app.doctor?.details?.nombre || app.doctor?.detalles?.nombre) {
+                                    DR. {{ app.doctor?.details?.nombre || app.doctor?.detalles?.nombre }} {{
+                                    app.doctor?.details?.apellido || app.doctor?.detalles?.apellido }}
+                                    } @else {
+                                    {{ app.doctor?.email }}
                                     }
-                                </tbody>
-                            </table>
-
-                            <!-- Pagination Controls -->
-                            <div
-                                class="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-slate-50 border-t border-black">
-                                <div class="flex items-center gap-6">
-                                    <div class="flex flex-col">
-                                        <span
-                                            class="text-[8px] font-black uppercase text-slate-400 tracking-widest">Total
-                                            Registros</span>
-                                        <span class="text-[10px] font-black text-black">{{ totalAppointments() }}</span>
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <span
-                                            class="text-[8px] font-black uppercase text-slate-400 tracking-widest">Mostrar</span>
-                                        <select [ngModel]="appointmentsLimit()" (ngModelChange)="onLimitChange($event)"
-                                            class="bg-transparent text-[10px] font-black uppercase outline-none cursor-pointer border-b border-black">
-                                            <option [value]="5">5 Filas</option>
-                                            <option [value]="10">10 Filas</option>
-                                            <option [value]="20">20 Filas</option>
-                                            <option [value]="50">50 Filas</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-center gap-4">
-                                    <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Página
-                                        {{ currentPage() }} de {{ totalPages() || 1 }}</span>
-
-                                    <div class="flex border border-black overflow-hidden bg-white">
-                                        <button type="button" (click)="onPageChange(currentPage() - 1)"
-                                            [disabled]="currentPage() === 1"
-                                            class="p-2 border-r border-black hover:bg-black hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-black">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15 19l-7-7 7-7" />
-                                            </svg>
-                                        </button>
-                                        <button type="button" (click)="onPageChange(currentPage() + 1)"
-                                            [disabled]="currentPage() === (totalPages() || 1)"
-                                            class="p-2 hover:bg-black hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-black">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <span class="px-2 py-0.5 border text-[8px] font-black uppercase tracking-tighter"
+                                        [class]="getStatusClasses(app.status)">
+                                        {{ app.status }}
+                                    </span>
+                                </td>
+                            </ng-template>
+                        </app-data-table>
                     </section>
 
                     <!-- Billing History (Receptionist/Admin Only) -->
@@ -363,45 +298,53 @@
                                 Clínico Nodo Central</span>
                             <div class="h-[1px] flex-1 bg-slate-200"></div>
                         </div>
-                        <div class="space-y-4">
-                            @for (record of clinicalHistory(); track record.id) {
-                            <div
-                                class="p-6 bg-white border-l-4 border-black border-y border-r border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                                <div class="flex justify-between items-start mb-4">
+
+                        <app-data-table [headers]="['Fecha', 'Motivo', 'Enfermedad Reportada', 'Acciones']"
+                            [data]="clinicalHistory()" [page]="clinicalHistoryPage()"
+                            [hasMore]="clinicalHistoryHasMore()" [showTotal]="false" [showLimit]="false"
+                            [showRecordsInfo]="false" emptyMessage="Cero Antecedentes en Local"
+                            (pageChange)="onClinicalHistoryPageChange($event)">
+
+                            <ng-template #rowTemplate let-record>
+                                <td class="px-4 py-4">
                                     <div class="flex flex-col">
-                                        <span class="text-[10px] font-black text-black italic uppercase">Consulta
-                                            Externa</span>
-                                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{{
-                                            record.createdAt | date:'dd MMMM, yyyy' }}</span>
+                                        <span class="text-[10px] font-black text-black">{{ record.createdAt |
+                                            date:'dd/MM/yyyy' }}</span>
+                                        <span class="text-[9px] font-bold text-slate-400 uppercase">{{ record.createdAt
+                                            | date:'HH:mm' }}</span>
                                     </div>
-                                    <span
-                                        class="text-[8px] font-black bg-slate-100 px-2 py-1 uppercase tracking-widest text-slate-500">
-                                        ID MÉDICO: {{ record.doctorId.slice(0,8) }}
-                                    </span>
-                                </div>
-                                <div class="space-y-2">
-                                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-tight">Motivo:
-                                    </p>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <p class="text-[10px] font-black uppercase text-black leading-tight">{{
+                                        record.reason }}</p>
+                                    <div class="mt-2 flex flex-wrap gap-1">
+                                        @for (diag of record.diagnoses; track diag) {
+                                        <span
+                                            class="text-[8px] font-black bg-cyan-50 text-cyan-700 px-1.5 py-0.5 border border-cyan-100 uppercase">Dx:
+                                            {{ diag }}</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4">
                                     <p
-                                        class="text-xs font-bold text-black leading-relaxed italic border-l border-slate-100 pl-4">
-                                        "{{ record.reasonForConsultation }}"</p>
-                                </div>
-                                <div class="mt-4 pt-4 border-t border-slate-50 flex gap-4">
-                                    @for (diag of record.diagnoses; track diag.code) {
-                                    <span
-                                        class="text-[8px] font-black bg-cyan-50 text-cyan-700 px-2 py-1 border border-cyan-100 uppercase">
-                                        {{ diag.code }} / {{ diag.description }}
-                                    </span>
-                                    }
-                                </div>
-                            </div>
-                            } @empty {
-                            <div class="p-12 border-2 border-dashed border-slate-200 text-center">
-                                <p class="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Cero
-                                    Antecedentes en Local</p>
-                            </div>
-                            }
-                        </div>
+                                        class="text-[10px] font-medium text-slate-600 leading-relaxed whitespace-pre-wrap">
+                                        {{ record.currentIllness }}</p>
+                                </td>
+                                <td class="px-4 py-4">
+                                    <button (click)="viewRdaDetail(record.id)"
+                                        class="flex items-center gap-2 px-3 py-1.5 border border-black bg-white hover:bg-black hover:text-white transition-all group">
+                                        <svg class="w-3.5 h-3.5 group-hover:scale-110 transition-transform" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        <span class="text-[9px] font-black uppercase tracking-widest">Ver Detalle</span>
+                                    </button>
+                                </td>
+                            </ng-template>
+                        </app-data-table>
                     </section>
 
                     <!-- Interoperability clinical history -->
@@ -468,6 +411,26 @@
         }
     </main>
 
+    <!-- RDA Detail Modal -->
+    <app-modal [isOpen]="isRdaModalOpen()" title="Documento Clínico / RDA" (close)="closeRdaModal()">
+        @if (isRdaLoading()) {
+        <div class="py-20 flex flex-col items-center justify-center space-y-4">
+            <div class="w-12 h-12 border-4 border-slate-100 border-t-black animate-spin"></div>
+            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Procesando Registro...</p>
+        </div>
+        } @else if (selectedRda()) {
+        <div class="animate-enter">
+            <app-rda-viewer [rda]="selectedRda()!"></app-rda-viewer>
+
+            <div class="mt-8 flex justify-end">
+                <button (click)="closeRdaModal()"
+                    class="px-8 py-3 bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-800 transition-colors">
+                    Cerrar Documento
+                </button>
+            </div>
+        </div>
+        }
+    </app-modal>
     <!-- Check-In Drawer -->
     <app-check-in-drawer [isOpen]="isCheckInDrawerOpen()" [appointment]="nextAppointment()"
         [catalogItems]="catalogItems()" (close)="isCheckInDrawerOpen.set(false)" (process)="onCheckInProcessed()">

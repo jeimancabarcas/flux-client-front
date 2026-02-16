@@ -5,16 +5,21 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PatientService } from '../../../core/services/patient.service';
 import { AppointmentService } from '../../../core/services/appointment.service';
 import { RdaService } from '../../../core/services/rda.service';
+import { MedicalRecordService } from '../../../core/services/medical-record.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Patient } from '../../../core/models/patient.model';
 import { Appointment } from '../../../core/models/appointment.model';
-import { ClinicalRecordRDA } from '../../../core/models/rda.model';
+import { MedicalRecordHistoryItem } from '../../../core/models/medical-record.model';
 import { UserRole } from '../../../core/models/user.model';
 import { SidebarComponent } from '../../../shared/components/organisms/sidebar/sidebar.component';
 import { CheckInDrawerComponent } from '../../appointments/components/check-in-drawer/check-in-drawer.component';
 import { MastersService } from '../../../core/services/masters.service';
 import { BillingService } from '../../../core/services/billing.service';
 import { CatalogItem } from '../../../core/models/masters.model';
+import { DataTableComponent } from '../../../shared/components/organisms/data-table/data-table.component';
+import { ModalComponent } from '../../../shared/components/molecules/modal/modal.component';
+import { RdaViewerComponent } from '../../consultation/components/rda-viewer/rda-viewer.component';
+import { ClinicalRecordRDA, RdaType } from '../../../core/models/rda.model';
 
 interface BillingRecord {
     id: string;
@@ -26,7 +31,7 @@ interface BillingRecord {
 
 @Component({
     selector: 'app-patient-detail',
-    imports: [CommonModule, FormsModule, SidebarComponent, CheckInDrawerComponent],
+    imports: [CommonModule, FormsModule, SidebarComponent, CheckInDrawerComponent, DataTableComponent, ModalComponent, RdaViewerComponent],
     templateUrl: './patient-detail.component.html',
     styleUrl: './patient-detail.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -37,6 +42,7 @@ export class PatientDetailComponent implements OnInit {
     private readonly patientService = inject(PatientService);
     private readonly appointmentService = inject(AppointmentService);
     private readonly rdaService = inject(RdaService);
+    private readonly medicalRecordService = inject(MedicalRecordService);
     private readonly mastersService = inject(MastersService);
     private readonly billingService = inject(BillingService);
     protected readonly authService = inject(AuthService);
@@ -47,12 +53,19 @@ export class PatientDetailComponent implements OnInit {
     protected readonly totalAppointments = signal(0);
     protected readonly currentPage = signal(1);
     protected readonly appointmentsLimit = signal(5);
-    protected readonly clinicalHistory = signal<ClinicalRecordRDA[]>([]);
+    protected readonly clinicalHistory = signal<MedicalRecordHistoryItem[]>([]);
+    protected readonly clinicalHistoryLimit = signal(5);
+    protected readonly clinicalHistoryPage = signal(1);
+    protected readonly clinicalHistoryTotal = signal(0);
+    protected readonly clinicalHistoryHasMore = signal(false);
     protected readonly billingHistory = signal<BillingRecord[]>([]);
     protected readonly nextAppointment = signal<Appointment | null>(null);
     protected readonly isLoading = signal(true);
     protected readonly isNextAppLoading = signal(false);
     protected readonly isSidebarOpen = signal(false);
+    protected readonly selectedRda = signal<ClinicalRecordRDA | null>(null);
+    protected readonly isRdaModalOpen = signal(false);
+    protected readonly isRdaLoading = signal(false);
 
     // Check-In Drawer State
     protected readonly isCheckInDrawerOpen = signal(false);
@@ -98,13 +111,7 @@ export class PatientDetailComponent implements OnInit {
 
         // Historial Clínico Local (Solo para Médicos)
         if (this.authService.userRole() === UserRole.MEDICO) {
-            this.rdaService.getLocalHistory(patientId).subscribe({
-                next: (res: any) => {
-                    if (res.success) {
-                        this.clinicalHistory.set(res.data);
-                    }
-                }
-            });
+            this.loadClinicalHistory(patientId, 1);
         }
 
         // Historial de Facturacion Real
@@ -144,6 +151,82 @@ export class PatientDetailComponent implements OnInit {
         this.isLoading.set(false);
     }
 
+    private loadClinicalHistory(patientId: string, page: number): void {
+        this.medicalRecordService.getHistoryByPatient(patientId, page, this.clinicalHistoryLimit()).subscribe({
+            next: (res: any) => {
+                if (res.success) {
+                    this.clinicalHistory.set(res.data);
+                    this.clinicalHistoryTotal.set(res.total || res.data.length);
+                    this.clinicalHistoryHasMore.set(res.data.length === this.clinicalHistoryLimit());
+                }
+            }
+        });
+    }
+
+    protected viewRdaDetail(recordId: string): void {
+        this.isRdaLoading.set(true);
+        this.isRdaModalOpen.set(true);
+
+        // Buscamos el registro en la lista actual
+        const record = this.clinicalHistory().find(r => r.id === recordId);
+        if (!record) return;
+
+        // Mapeamos los datos básicos que ya tenemos para una vista rápida o fetch completo si es necesario
+        // En este caso, el servicio de RDA generalmente se usa para registros completos de IHCE o Locales Flux.
+        // Si el historial clínico local usa MedicalRecordHistoryItem, mapeamos a ClinicalRecordRDA para el visor.
+        const mappedRda: ClinicalRecordRDA = {
+            appointmentId: '', // No disponible directamente en el history item simplificado del frontend
+            patientId: this.patient()?.id || '',
+            doctorId: record.doctorId || '',
+            type: RdaType.CONSULTA_EXTERNA,
+            reasonForConsultation: record.reason,
+            currentIllness: record.currentIllness,
+            physicalExamination: record.physicalExamination?.content || 'No registrado',
+            vitalSigns: record.physicalExamination ? {
+                bloodPressure: `${record.physicalExamination.systolicBloodPressure || '--'}/${record.physicalExamination.diastolicBloodPressure || '--'}`,
+                heartRate: record.physicalExamination.heartRate,
+                respiratoryRate: record.physicalExamination.respiratoryRate,
+                temperature: record.physicalExamination.temperature,
+                weight: record.physicalExamination.weight,
+                height: record.physicalExamination.height
+            } : undefined,
+            diagnoses: record.diagnoses.map((d, i) => ({
+                code: `DX-${i + 1}`,
+                description: d,
+                type: 'PRINCIPAL'
+            })),
+            medications: [],
+            planAndTreatment: (record as any).plan || 'No registrado', // El history item a veces oculta el plan, forzamos casteo si existe
+            recommendations: '',
+            createdAt: record.createdAt
+        };
+
+        this.selectedRda.set(mappedRda);
+        this.isRdaLoading.set(false);
+    }
+
+    protected closeRdaModal(): void {
+        this.isRdaModalOpen.set(false);
+        this.selectedRda.set(null);
+    }
+
+    protected onClinicalHistoryPageChange(pageIdx: number): void {
+        const patientId = this.patient()?.id;
+        if (patientId) {
+            this.clinicalHistoryPage.set(pageIdx);
+            this.loadClinicalHistory(patientId, pageIdx);
+        }
+    }
+
+    protected onClinicalHistoryLimitChange(limit: number): void {
+        this.clinicalHistoryLimit.set(limit);
+        this.clinicalHistoryPage.set(1);
+        const patientId = this.patient()?.id;
+        if (patientId) {
+            this.loadClinicalHistory(patientId, 1);
+        }
+    }
+
     private loadAppointments(patientId: string, page: number): void {
         this.appointmentService.getPatientAppointmentHistory(patientId, page, this.appointmentsLimit()).subscribe({
             next: (res) => {
@@ -175,6 +258,10 @@ export class PatientDetailComponent implements OnInit {
 
     protected readonly totalPages = computed(() =>
         Math.ceil(this.totalAppointments() / this.appointmentsLimit())
+    );
+
+    protected readonly clinicalHistoryTotalPages = computed(() =>
+        Math.ceil(this.clinicalHistoryTotal() / this.clinicalHistoryLimit())
     );
 
     protected openCheckIn(): void {

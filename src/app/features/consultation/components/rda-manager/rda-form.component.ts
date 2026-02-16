@@ -10,11 +10,13 @@ import {
     PediatricExtension
 } from '../../../../core/models/medical-record.model';
 import { CardComponent } from '../../../../shared/components/atoms/card/card.component';
+import { IcdSelectorComponent } from '../../../../shared/components/molecules/icd-selector/icd-selector.component';
+import { IcdDiagnosis } from '../../../../core/models/icd.model';
 
 @Component({
     selector: 'app-rda-form',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, FormsModule, CardComponent],
+    imports: [CommonModule, ReactiveFormsModule, FormsModule, CardComponent, IcdSelectorComponent],
     template: `
     <div class="space-y-12 pb-20 relative" [class.is-read-only]="isReadOnly">
         @if (isReadOnly) {
@@ -171,61 +173,17 @@ import { CardComponent } from '../../../../shared/components/atoms/card/card.com
 
             <!-- Section 4: Diagnoses -->
             <app-card customClass="p-10 space-y-8">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <span class="text-xl font-black text-white bg-black px-3 py-1">04</span>
-                        <h4 class="text-xl font-black uppercase tracking-tighter">Diagnósticos (CIE-10)</h4>
-                    </div>
-                    @if (!isReadOnly) {
-                        <button type="button" (click)="addDiagnosis()" class="text-[10px] font-black uppercase tracking-widest px-4 py-2 border-2 border-black hover:bg-black hover:text-white transition-all">
-                            + Agregar Diagnóstico
-                        </button>
-                    }
+                <div class="flex items-center gap-4">
+                    <span class="text-xl font-black text-white bg-black px-3 py-1">04</span>
+                    <h4 class="text-xl font-black uppercase tracking-tighter">Impresión Diagnóstica (CIE-11)</h4>
                 </div>
 
-                <div formArrayName="diagnoses" class="space-y-4">
-                    @for (diag of diagnoses.controls; track diag; let i = $index) {
-                        <div [formGroupName]="i" class="grid grid-cols-1 md:grid-cols-12 gap-4 p-6 bg-slate-50 border-2 border-black group/item animate-enter">
-                            <div class="md:col-span-2">
-                                <label class="text-[9px] font-black uppercase text-slate-400">Código</label>
-                                <input type="text" formControlName="code" 
-                                    class="w-full p-2 border-2 outline-none font-bold uppercase transition-all" 
-                                    [class.border-black]="!diag.get('code')?.invalid || !diag.get('code')?.touched"
-                                    [class.border-red-500]="diag.get('code')?.invalid && diag.get('code')?.touched"
-                                    placeholder="Ej: J00">
-                                @if (diag.get('code')?.invalid && diag.get('code')?.touched) {
-                                    <span class="text-[8px] font-bold text-red-500 uppercase">Formato Inválido</span>
-                                }
-                            </div>
-                            <div class="md:col-span-7">
-                                <label class="text-[9px] font-black uppercase text-slate-400">Descripción</label>
-                                <input type="text" formControlName="description" 
-                                    class="w-full p-2 border-2 outline-none font-medium text-sm transition-all" 
-                                    [class.border-black]="!diag.get('description')?.invalid || !diag.get('description')?.touched"
-                                    [class.border-red-500]="diag.get('description')?.invalid && diag.get('description')?.touched"
-                                    placeholder="Nombre de la patología...">
-                                @if (diag.get('description')?.invalid && diag.get('description')?.touched) {
-                                    <span class="text-[8px] font-bold text-red-500 uppercase">Requerido</span>
-                                }
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="text-[9px] font-black uppercase text-slate-400">Tipo</label>
-                                <select formControlName="type" class="w-full p-2.5 border-2 border-black focus:border-black outline-none font-bold text-xs">
-                                    <option value="PRINCIPAL">PRINCIPAL</option>
-                                    <option value="RELACIONADO">RELACIONADO</option>
-                                </select>
-                            </div>
-                            <div class="md:col-span-1 flex items-end justify-center pb-1">
-                                @if (!isReadOnly && diagnoses.length > 1) {
-                                    <button type="button" (click)="removeDiagnosis(i)" class="p-2 text-slate-400 hover:text-red-600 transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                }
-                            </div>
-                        </div>
-                    }
+                <div class="space-y-6">
+                    <app-icd-selector 
+                        [label]="'Buscador Global de Patologías'"
+                        [initialSelection]="initialIcdCodes()"
+                        (selectionChange)="onIcdSelectionChange($event)"
+                    ></app-icd-selector>
                 </div>
             </app-card>
 
@@ -394,6 +352,7 @@ export class RdaFormComponent implements OnInit {
 
     protected rdaForm!: FormGroup;
     protected readonly showPediatric = signal(false);
+    protected readonly initialIcdCodes = signal<IcdDiagnosis[]>([]);
 
     // Dictionary for user-friendly field names
     private readonly fieldLabels: Record<string, string> = {
@@ -402,7 +361,7 @@ export class RdaFormComponent implements OnInit {
         physicalExamination: 'Descripción de Hallazgos',
         planAndTreatment: 'Tratamiento y Plan',
         recommendations: 'Recomendaciones',
-        diagnoses: 'Diagnósticos (CIE-10)'
+        diagnoses: 'Diagnósticos (CIE-11)'
     };
 
     /**
@@ -453,13 +412,23 @@ export class RdaFormComponent implements OnInit {
 
         if (data.diagnoses && Array.isArray(data.diagnoses)) {
             this.diagnoses.clear();
-            data.diagnoses.forEach((code: string, index: number) => {
+            const initial: IcdDiagnosis[] = [];
+            data.diagnoses.forEach((diag: any, index: number) => {
+                const code = typeof diag === 'string' ? diag : diag.code;
+                const description = typeof diag === 'string' ? 'Registro Cargado' : (diag.description || 'Registro Cargado');
+
+                initial.push({ code, description });
+
                 this.diagnoses.push(this.fb.group({
-                    code: [code, [Validators.required, Validators.pattern(/^[A-Z][0-9][0-9].*$/)]],
-                    description: ['DIAGNÓSTICO RECUPERADO', Validators.required],
-                    type: [index === 0 ? 'PRINCIPAL' : 'RELACIONADO', Validators.required]
+                    code: [code, Validators.required],
+                    description: [description, Validators.required],
+                    type: [diag.type || (index === 0 ? 'PRINCIPAL' : 'RELACIONADO'), Validators.required]
                 }));
             });
+            this.initialIcdCodes.set(initial);
+        } else {
+            this.diagnoses.clear();
+            this.initialIcdCodes.set([]);
         }
 
         if (data.pediatricExtension) {
@@ -509,7 +478,6 @@ export class RdaFormComponent implements OnInit {
             this.updateInvalidFields();
         });
 
-        this.addDiagnosis();
         this.updateInvalidFields();
 
         if (this.initialData) {
@@ -525,19 +493,16 @@ export class RdaFormComponent implements OnInit {
         return this.rdaForm.get('diagnoses') as FormArray;
     }
 
-    addDiagnosis(): void {
-        const diagGroup = this.fb.group({
-            code: ['', [Validators.required, Validators.pattern(/^[A-Z][0-9][0-9].*$/)]],
-            description: ['', Validators.required],
-            type: ['PRINCIPAL', Validators.required]
+    protected onIcdSelectionChange(selection: IcdDiagnosis[]): void {
+        this.diagnoses.clear();
+        selection.forEach((diag, index) => {
+            this.diagnoses.push(this.fb.group({
+                code: [diag.code, Validators.required],
+                description: [diag.description, Validators.required],
+                type: [index === 0 ? 'PRINCIPAL' : 'RELACIONADO', Validators.required]
+            }));
         });
-        this.diagnoses.push(diagGroup);
-    }
-
-    removeDiagnosis(index: number): void {
-        if (this.diagnoses.length > 1) {
-            this.diagnoses.removeAt(index);
-        }
+        this.rdaForm.markAsDirty();
     }
 
     protected togglePediatric(): void {

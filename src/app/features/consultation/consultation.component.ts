@@ -12,6 +12,8 @@ import { HistoryLocalComponent } from './components/history-local/history-local.
 import { HistoryInteroperableComponent } from './components/history-interoperable/history-interoperable.component';
 import { RdaFormComponent } from './components/rda-manager/rda-form.component';
 import { ClinicalRecordRDA } from '../../core/models/rda.model';
+import { IcdSearchModalComponent } from '../../shared/components/molecules/icd-selector/icd-search-modal.component';
+import { IcdModalService } from '../../core/services/icd-modal.service';
 
 @Component({
     selector: 'app-consultation',
@@ -21,7 +23,8 @@ import { ClinicalRecordRDA } from '../../core/models/rda.model';
         SidebarComponent,
         HistoryLocalComponent,
         HistoryInteroperableComponent,
-        RdaFormComponent
+        RdaFormComponent,
+        IcdSearchModalComponent
     ],
     template: `
     <div class="flex h-screen overflow-hidden bg-white font-['Inter'] selection:bg-black selection:text-white relative">
@@ -151,9 +154,11 @@ import { ClinicalRecordRDA } from '../../core/models/rda.model';
                                                         </span>
                                                     </div>
                                                     <h5 class="text-[11px] font-black uppercase line-clamp-1 mb-1">{{ record.reason }}</h5>
-                                                    <div class="flex gap-1">
-                                                        @for (diag of record.diagnoses?.slice(0, 2); track diag) {
-                                                            <span class="text-[8px] font-bold px-1 py-0.5 bg-slate-100 text-slate-500 rounded-sm">Dx: {{ diag }}</span>
+                                                    <div class="flex flex-wrap gap-1">
+                                                        @for (diag of record.diagnoses?.slice(0, 3); track $index) {
+                                                            <span class="text-[7px] font-black px-1.5 py-0.5 bg-slate-100 text-slate-400 border border-slate-200 uppercase italic">
+                                                                {{ (diag?.code || diag) || '---' }}
+                                                            </span>
                                                         }
                                                     </div>
                                                 </div>
@@ -281,6 +286,10 @@ import { ClinicalRecordRDA } from '../../core/models/rda.model';
                     class="fixed inset-0 bg-black/20 backdrop-blur-sm z-[90] animate-fade-in"
                 ></div>
             }
+
+            @if (icdModalService.isOpen()) {
+                <app-icd-search-modal />
+            }
         </main>
     </div>
     `,
@@ -317,6 +326,7 @@ export class ConsultationComponent implements OnInit {
     private readonly router = inject(Router);
     private readonly appointmentService = inject(AppointmentService);
     private readonly medicalRecordService = inject(MedicalRecordService);
+    protected readonly icdModalService = inject(IcdModalService);
 
     protected readonly appointmentId = signal<string | null>(null);
     protected readonly appointment = signal<Appointment | null>(null);
@@ -416,7 +426,7 @@ export class ConsultationComponent implements OnInit {
                 weight: rdaData.vitalSigns?.weight,
                 height: rdaData.vitalSigns?.height
             },
-            diagnoses: rdaData.diagnoses?.map((d: any) => d.code) || ['Z00.0'],
+            diagnoses: rdaData.diagnoses || [],
             plan: rdaData.planAndTreatment,
             pediatricExtension: rdaData.pediatricExtension,
             patientBackground: rdaData.patientBackground
