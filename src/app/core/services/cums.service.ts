@@ -15,6 +15,7 @@ export interface CumMedication {
     atc: string;
     descripcionAtc: string;
     viaAdministracion: string;
+    descripcionComercial: string;
 }
 
 @Injectable({

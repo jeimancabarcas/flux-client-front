@@ -49,12 +49,16 @@ import { Subject, of } from 'rxjs';
                                     <div class="flex justify-between items-start gap-4">
                                         <div class="flex-1">
                                             <h5 class="font-black text-xs uppercase group-hover:text-cyan-600 transition-colors leading-tight">{{ med.producto }}</h5>
-                                            <p class="text-[10px] text-slate-500 font-medium mt-1">
+                                            <p class="text-[9px] text-slate-600 font-bold mt-1 uppercase">
+                                                {{ med.descripcionComercial }}
+                                            </p>
+                                            <p class="text-[9px] text-slate-500 font-medium mt-0.5">
                                                 {{ med.principioActivo }} - {{ med.concentracion }}
                                             </p>
                                             <div class="flex gap-2 mt-2">
                                                 <span class="px-1.5 py-0.5 bg-slate-100 text-[8px] font-bold text-slate-400 border border-slate-200 uppercase tracking-tighter">ATC: {{ med.atc }}</span>
                                                 <span class="px-1.5 py-0.5 bg-cyan-50 text-[8px] font-bold text-cyan-600 border border-cyan-100 uppercase tracking-tighter">{{ med.viaAdministracion }}</span>
+                                                <span class="px-1.5 py-0.5 bg-emerald-50 text-[8px] font-bold text-emerald-600 border border-emerald-100 uppercase tracking-tighter">{{ med.formaFarmaceutica }}</span>
                                             </div>
                                         </div>
                                         <div class="text-right shrink-0">
